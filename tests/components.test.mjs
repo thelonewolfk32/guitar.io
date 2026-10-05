@@ -41,7 +41,17 @@ const root = createRoot(document.body.appendChild(document.createElement('div'))
 const settle = () => new Promise(resolve => setTimeout(resolve, 20));
 async function action(fn) { await act(async () => { fn(); await settle(); }); }
 function button(name) { const result = [...document.querySelectorAll('button')].find(e => e.getAttribute('aria-label') === name || e.textContent.trim() === name); assert.ok(result, `button ${name}`); return result; }
-async function click(name) { await action(() => button(name).click()); }
+async function click(name) {
+  const dialog=document.querySelector('[role="dialog"]');
+  await action(() => button(name).click());
+  if(dialog&&['Save section','Save changes','Save folder'].includes(name)){
+    // A committed IndexedDB write can precede React's onClose update on slower
+    // runners. Wait for this dialog to close before opening the next editor.
+    const deadline=performance.now()+5000;
+    while(dialog.isConnected&&performance.now()<deadline)await action(()=>{});
+    assert(!dialog.isConnected,`${name} must close its completed editor`);
+  }
+}
 async function value(label, text) {
   const element = document.querySelector(`[aria-label="${label}"]`); assert.ok(element, label);
   await action(() => {

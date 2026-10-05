@@ -42,14 +42,15 @@ const settle = () => new Promise(resolve => setTimeout(resolve, 20));
 async function action(fn) { await act(async () => { fn(); await settle(); }); }
 function button(name) { const result = [...document.querySelectorAll('button')].find(e => e.getAttribute('aria-label') === name || e.textContent.trim() === name); assert.ok(result, `button ${name}`); return result; }
 async function click(name) {
-  const dialog=document.querySelector('[role="dialog"]');
+  const editor=name==='Save section'?document.querySelector('.section-editor'):document.querySelector('[role="dialog"]');
   await action(() => button(name).click());
-  if(dialog&&['Save section','Save changes','Save folder'].includes(name)){
+  if(editor&&['Save section','Save changes','Save folder'].includes(name)){
     // A committed IndexedDB write can precede React's onClose update on slower
-    // runners. Wait for this dialog to close before opening the next editor.
+    // runners. Sections have an inline editor, rather than a modal dialog.
+    // Wait for the completed editor to close before toggling it open again.
     const deadline=performance.now()+5000;
-    while(dialog.isConnected&&performance.now()<deadline)await action(()=>{});
-    assert(!dialog.isConnected,`${name} must close its completed editor`);
+    while(editor.isConnected&&performance.now()<deadline)await action(()=>{});
+    assert(!editor.isConnected,`${name} must close its completed editor`);
   }
 }
 async function value(label, text) {

@@ -6,7 +6,7 @@ import {serve,fixtures,seed,capturePlayer} from './library-harness.mjs';
 
 const desktop=process.argv.includes('--desktop'),profile=desktop?fs.mkdtempSync(path.resolve('test-results/desktop-v124-')):undefined;
 const version=JSON.parse(fs.readFileSync('package.json')).version,server=await serve('dist');
-const browser=desktop?await electron.launch({executablePath:path.resolve(`../../Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+const browser=desktop?await electron.launch({executablePath:path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts',`Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
 const context=desktop?browser.context():await browser.newContext({viewport:{width:1512,height:960}}),page=desktop?await browser.firstWindow():await context.newPage(),url=desktop?'guitario://app/':server.url;
 const button=name=>page.getByRole('button',{name,exact:true}),song=fixtures(1,16)[0],errors=[];
 song.sections=song.sectionsByTrack['0']=[{id:'intro',name:'Intro',start:1,end:8,color:'#8b79ff',status:'new',learnedPercent:0,notes:'',speed:.5},{id:'verse',name:'Verse',start:9,end:16,color:'#24b8a8',status:'new',learnedPercent:0,notes:'',speed:.75}];

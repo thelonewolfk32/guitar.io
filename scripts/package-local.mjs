@@ -1,15 +1,15 @@
-/** Reuse the supplied Electron 44.4.5 Windows runtime; do not alter the old app. */
+/** Package from the pinned dependency runtime, independent of older releases. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const project = fileURLToPath(new URL('../', import.meta.url));
-const workspace = process.env.GUITARIO_OUTPUT_DIR?path.resolve(process.env.GUITARIO_OUTPUT_DIR):path.resolve(project, '../..');
-const baseline = path.resolve(project,'../../Guitar-io-1.2.4-Windows-x64');
-const runtime = await fs.access(baseline).then(()=>baseline).catch(()=>path.join(project,'node_modules/electron/dist'));
+const workspace = process.env.GUITARIO_OUTPUT_DIR?path.resolve(process.env.GUITARIO_OUTPUT_DIR):path.join(project,'release/artifacts');
+const runtime = path.join(project,'node_modules/electron/dist');
 const config = JSON.parse(await fs.readFile(path.join(project, 'package.json'), 'utf8'));
 const output = path.join(workspace, `Guitar-io-${config.version}-Windows-x64`);
+if ((await fs.readFile(path.join(runtime,'version'),'utf8')).trim()!==config.devDependencies.electron) throw new Error('Install the pinned Electron runtime before packaging.');
 await fs.mkdir(path.join(project, 'release'), { recursive: true });
 const stage = await fs.mkdtemp(path.join(project, 'release/app-'));
 const require = createRequire(import.meta.url);

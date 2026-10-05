@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { checkSongDetails } from './song-details-check.mjs';
 
 const { version } = JSON.parse(await fs.readFile('package.json', 'utf8'));
-const executablePath = path.resolve(`../../Guitar-io-${version}-Windows-x64/Guitar.io.exe`);
+const executablePath = path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts',`Guitar-io-${version}-Windows-x64/Guitar.io.exe`);
 const profile = await fs.mkdtemp(path.resolve('test-results/desktop-profile-'));
 const app = await electron.launch({ executablePath, env: { ...process.env, GUITARIO_TEST_PROFILE: profile } });
 try {

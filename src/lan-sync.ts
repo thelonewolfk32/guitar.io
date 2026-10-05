@@ -17,6 +17,9 @@ const initial:SyncView={enabled:false,available:false,name:'Guitar.io',code:'',p
 export class SyncEngine {
   view:SyncView={...initial};private config?:LanConfig;private timer?:ReturnType<typeof setTimeout>;private listeners=new Set<()=>void>();private disconnect?:()=>void;private disposed=false;private busy=false;private wake?:()=>void;private transfers=new Map<string,Promise<void>>();
   private activeDownloads=0;private downloadWaiters:(()=>void)[]=[];private changed?:()=>void;
+  private updatePaused=false;private activeIncoming=0;
+  async pauseForUpdate(){this.updatePaused=true;if(this.timer)clearTimeout(this.timer);const deadline=Date.now()+30000;while(this.busy||this.activeIncoming||this.transfers.size){if(Date.now()>deadline)throw new Error('Device sync is still finishing. Try installing again shortly.');await new Promise(r=>setTimeout(r,100));}}
+  resumeAfterUpdate(){this.updatePaused=false;this.schedule(1500);}
   private pairing?:{id:string;secret?:string;name:string;expires:number;approved:boolean;identity?:Awaited<ReturnType<typeof pairingIdentity>>;nonce?:string;commit?:string};private attempts:number[]=[];private pairingExpiry?:ReturnType<typeof setTimeout>;
   constructor(private canApply:()=>boolean,private onChanges:()=>void){}
   subscribe=(callback:()=>void)=>{this.listeners.add(callback);return()=>{this.listeners.delete(callback);};};
@@ -24,7 +27,7 @@ export class SyncEngine {
   private log(stage:string,message:string,peer?:string,error=false,entity?:string){const events=[...this.view.events,{at:new Date().toISOString(),stage,message:message.slice(0,700),peer,error,entity}].slice(-120);this.update({events});try{window.localStorage.setItem('guitario-sync-diagnostics',JSON.stringify(events));}catch{}}
   clearDiagnostics(){this.update({events:[]});try{window.localStorage.removeItem('guitario-sync-diagnostics');}catch{}}
   private applied(){this.onChanges();window.dispatchEvent(new Event('guitario:synced'));}
-  async diagnostics(){const native=await window.guitarLan?.status(),library=await readLibraryIndex(),d=await db();return {version:'1.4.43',at:new Date().toISOString(),stage:this.view.stage,sessionWireBytes:this.view.bytes,enabled:this.view.enabled,autoSync:this.view.autoSync,network:{endpoints:native?.endpoints || [],discovered:native?.discovered.map(p=>({name:p.name,endpoints:p.endpoints})),error:native?.error},peers:await Promise.all(this.view.peers.map(async p=>({name:p.name,endpoints:p.endpoints,error:p.error,lastSuccessfulSync:p.lastSync,pullCheckpoint:await syncSetting(`pull:${p.id}`),pushCheckpoint:await syncSetting(`push:${p.id}`)}))),catalogue:{songs:library.songs.map(s=>({id:s.id,title:s.title,artist:s.artist,album:s.album,artworkAssetId:s.artworkAssetId,lastOpenedAt:s.lastOpenedAt,lastPlayedAt:s.lastPlayedAt,lastPlayedBar:s.lastPlayedBar})),originalRecords:await req(d.transaction('songSources').objectStore('songSources').count()),attachmentRecords:await req(d.transaction('assets').objectStore('assets').count())},events:this.view.events};}
+  async diagnostics(){const native=await window.guitarLan?.status(),library=await readLibraryIndex(),d=await db();return {version:'1.5.0',at:new Date().toISOString(),stage:this.view.stage,sessionWireBytes:this.view.bytes,enabled:this.view.enabled,autoSync:this.view.autoSync,network:{endpoints:native?.endpoints || [],discovered:native?.discovered.map(p=>({name:p.name,endpoints:p.endpoints})),error:native?.error},peers:await Promise.all(this.view.peers.map(async p=>({name:p.name,endpoints:p.endpoints,error:p.error,lastSuccessfulSync:p.lastSync,pullCheckpoint:await syncSetting(`pull:${p.id}`),pushCheckpoint:await syncSetting(`push:${p.id}`)}))),catalogue:{songs:library.songs.map(s=>({id:s.id,title:s.title,artist:s.artist,album:s.album,artworkAssetId:s.artworkAssetId,lastOpenedAt:s.lastOpenedAt,lastPlayedAt:s.lastPlayedAt,lastPlayedBar:s.lastPlayedBar})),originalRecords:await req(d.transaction('songSources').objectStore('songSources').count()),attachmentRecords:await req(d.transaction('assets').objectStore('assets').count())},events:this.view.events};}
   async start(){
     try{const saved=JSON.parse(window.localStorage.getItem('guitario-sync-diagnostics') || '[]');if(Array.isArray(saved))this.update({events:saved.slice(-120)});}catch{}
     if(!window.guitarLan)return;const id=await getDeviceId(),saved=await syncSetting<LanConfig>('config');this.config={enabled:saved?.enabled || false,autoSync:saved?.autoSync ?? true,pairingCode:saved?.pairingCode || shortCode(),id,secret:saved?.secret || newSecret(),name:saved?.name || (navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('Mac')?'Mac':'PC')};
@@ -36,7 +39,7 @@ export class SyncEngine {
     if(this.config.enabled)void this.run(true);
   }
   stop(){this.disposed=true;if(this.pairingExpiry)clearTimeout(this.pairingExpiry);if(this.timer)clearTimeout(this.timer);this.disconnect?.();if(this.wake){window.removeEventListener('online',this.wake);document.removeEventListener('visibilitychange',this.wake);}if(this.changed)window.removeEventListener('guitario:changed',this.changed);setMissingContentLoader(undefined);}
-  private schedule(delay:number){if(this.timer)clearTimeout(this.timer);if(!this.disposed&&this.view.autoSync&&this.view.enabled)this.timer=setTimeout(()=>void this.run(true),delay);}
+  private schedule(delay:number){if(this.timer)clearTimeout(this.timer);if(!this.disposed&&!this.updatePaused&&this.view.autoSync&&this.view.enabled)this.timer=setTimeout(()=>void this.run(true),delay);}
   private async configure(){if(!this.config||!window.guitarLan)return;await setSyncSetting('config',this.config);const status=await window.guitarLan.configure(this.config);this.update({code:this.config.enabled && status.endpoints.length?this.config.pairingCode || '':'',error:status.error || ''});}
   async enable(value:boolean){if(!this.config)return;this.config.enabled=value;this.update({enabled:value,error:''});await this.configure();if(value)await this.run(true);else{this.approvePair(false);if(this.timer)clearTimeout(this.timer);}}
   async rename(name:string){if(!this.config)return;this.config.name=name.trim().slice(0,100) || 'Guitar.io';this.update({name:this.config.name});await this.configure();}
@@ -113,16 +116,16 @@ export class SyncEngine {
     }
     if(await syncSetting(`blocked:${_deviceId}`))throw new Error('This device was removed. Pair it again.');
     if(payload?.op==='hello' && payload.peer){if(payload.peer.id!==_deviceId)throw new Error('Invalid peer identity.');await this.rememberPeer(payload.peer);}
-    if(payload?.op==='hello'||payload?.op==='head')return {id:this.config.id,name:this.config.name,head:await syncHead(),ready:this.canApply(),protocol:2};
+    if(payload?.op==='hello'||payload?.op==='head')return {id:this.config.id,name:this.config.name,head:await syncHead(),ready:!this.updatePaused&&this.canApply(),protocol:2};
     if(payload?.op==='changes')return syncPage(payload.after,payload.limit);
     if(payload?.op==='baselines')return {rows:await syncBaselines(payload.keys)};
     if(payload?.op==='blob'){if(!['source','asset'].includes(payload.kind)||typeof payload.id!=='string'||payload.id.length>200)throw new Error('Invalid content request.');return contentChunk(payload.kind,payload.id,payload.offset);}
-    if(payload?.op==='apply'){if(!this.canApply())return {busy:true};try{const needs=await missingSyncBases(payload.rows);if(needs.length){this.log('Metadata repair',`Requested ${needs.length} missing base records.`);return {needs};}const accepted=await applySyncPage(payload.rows);if(accepted){this.applied();this.logRows('Received',validateSyncRows(payload.rows),accepted);}return {accepted};}catch(error){this.log('Incoming metadata',error instanceof Error?error.message:String(error),undefined,true);throw error;}}
+    if(payload?.op==='apply'){if(this.updatePaused||!this.canApply())return {busy:true};this.activeIncoming++;try{const needs=await missingSyncBases(payload.rows);if(needs.length){this.log('Metadata repair',`Requested ${needs.length} missing base records.`);return {needs};}const accepted=await applySyncPage(payload.rows);if(accepted){this.applied();this.logRows('Received',validateSyncRows(payload.rows),accepted);}return {accepted};}catch(error){this.log('Incoming metadata',error instanceof Error?error.message:String(error),undefined,true);throw error;}finally{this.activeIncoming--;}}
     throw new Error('Unknown sync operation.');
   }
   async run(automatic=false){
     if(automatic&&!this.view.autoSync)return;
-    if(this.disposed||this.busy)return;this.busy=true;
+    if(this.disposed||this.updatePaused||this.busy)return;this.busy=true;
     try{
       if(!this.config?.enabled||document.visibilityState==='hidden'&&document.documentElement.classList.contains('native-ios')){return;}
       this.update({busy:true,waiting:!this.canApply(),stage:'Checking device revisions'});this.log('Check',automatic?'Background revision check.':'Manual revision check.');
@@ -140,6 +143,7 @@ export class SyncEngine {
   }
   private logRows(stage:string,rows:SyncRow[],accepted:number,peer?:string){const songs=rows.filter(r=>r.entity==='song'),activity=songs.filter(r=>'lastPlayedAt' in (r.patch || {}));this.log(stage,`${accepted} changed records; ${songs.length} songs; ${activity.length} playback history updates.`,peer);for(const row of songs)this.log(stage,String(row.patch?.title || row.entityId)+(row.operation==='delete'?' · deleted':''),peer,false,row.key);}
   async fetchContent(kind:'source'|'asset',id:string){
+    if(this.updatePaused)throw new Error('An update is preparing. Try this file again after restarting.');
     const key=`${kind}/${id}`;if(this.transfers.has(key))return this.transfers.get(key)!;
     const promise=(async()=>{if(this.activeDownloads>=2)await new Promise<void>(resolve=>this.downloadWaiters.push(resolve));this.activeDownloads++;try{await this.downloadContent(kind,id);}finally{this.activeDownloads--;this.downloadWaiters.shift()?.();await cleanTransfers();}})().finally(()=>this.transfers.delete(key));this.transfers.set(key,promise);return promise;
   }

@@ -69,12 +69,12 @@ class UpdateInstaller{
    await fs.unlink(zip);this.ready={stage,source,files,version:release.latestVersion};this.notify({status:'ready',progress:100});return this.ready;
   }catch(error){await removeStage(this.root,stage).catch(()=>{});throw error;}
  }
- async install(restart=true){
+ async install(restart=true,{force=false}={}){
   if(this.installing)return;const ready=this.ready;if(!ready)throw Error('Check for updates first.');
   this.installing=true;
   this.notify({status:'installing',message:''});
   try{
-   await this.beforeInstall();const target=this.platform==='darwin'?path.resolve(path.dirname(this.execPath),'../..'):path.dirname(this.execPath);
+   await this.beforeInstall({force});const target=this.platform==='darwin'?path.resolve(path.dirname(this.execPath),'../..'):path.dirname(this.execPath);
    if(target===path.parse(target).root||target===this.directory||within(target,this.directory)||(await fs.lstat(target)).isSymbolicLink())throw Error('This app location cannot be updated. Move it to a normal app folder.');
    await fs.access(target,require('node:fs').constants.W_OK);
    const plan={target,source:ready.source,files:ready.files,stage:ready.stage,version:ready.version,parentPid:process.pid,restart,executable:this.execPath,profile:this.directory,token:randomUUID()};

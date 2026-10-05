@@ -2,11 +2,11 @@
 
 A local guitar library and practice player for Windows and Apple Silicon Mac. Import Guitar Pro or Songsterr tabs, organise songs and guitars, track section progress, practise with MIDI or YouTube, and splice parts into a learning arrangement.
 
-**Current version: 1.4.43.**
+**Current version: 1.5.0.**
 
 - [Download Windows and Mac](https://github.com/thelonewolfk32/guitar.io/releases/latest)
 - [First-time GitHub and publishing guide](GITHUB_RELEASES.md)
-- [V1.4.43 changes](CHANGELOG-v1.4.43.md)
+- [V1.5.0 changes](CHANGELOG-v1.5.0.md)
 - [Local sync](SYNC.md)
 - [Mac preparation](MACOS_BUILD.md)
 
@@ -14,20 +14,10 @@ Windows: extract the ZIP and open `Guitar.io.exe` inside its folder.
 
 Mac: extract the ARM64 ZIP, run `Prepare and open Guitar.io.command` once, then open `Guitar.io.app`. These are local test builds without an Apple Developer certificate or notarization.
 
-Open **Help (?) → version number** for **Check for updates** and an **Auto-updater OFF/ON** switch. Manual checks download, verify, install and restart when an update is available. Automatic updates download on launch and install while the library is idle. Return to the library and close editors before installing. Personal libraries stay in separate app data. Mac signing happens in the background; a preparation failure keeps the app open and records the error in `update-install.log`. If an older Mac updater fails with `AMFIUnserializeXML`, manually prepare and replace the app with V1.4.42 once; future releases use the repaired installer. V1.4.3 users also need a manual installation to obtain an installer.
+Open **Help (?) → version number** for **Check for updates** and **Auto-updater OFF/ON**. Launch always checks for a newer release and shows a light-green download icon at the top right. Manual checks download and verify; click **Install update** when ready. Automatic updates download on launch and install when the library is idle. Close open views normally or use **Force install** after its unsaved-changes warning. Active saves/imports finish first; sync drains and saved data is committed before exit. Windows retains rollback until the library and a visible window open. Personal libraries stay in separate app data. Mac signs in the background; preparation failures keep the app open and record `update-install.log`.
 
-Enable Device sync on both computers, add the other device's six-digit code, and confirm the matching verification digits. Wi-Fi and Ethernet can share a LAN. Install V1.4.3 or later on both devices to repair earlier incomplete-metadata errors. Sync diagnostics shows stages and errors and exports a local report without pairing secrets or tab/audio bytes.
+Local workspace layout: open `Guitar.io.exe` directly in the main project folder. The active source stays under `development/guitar-io`; generated packages are under its `release/artifacts`. Old release copies are available through Git history and GitHub Releases. Keep the main folder intact when using the updater.
 
-## Build from source
+Enable Device sync on both computers and pair with the six-digit code. Wi-Fi and Ethernet can share a LAN. Your songs, artwork and progress stay in private app data and sync separately from application updates.
 
-Use Node.js 24, npm, and Python 3.12 or newer for Mac packaging.
-
-```sh
-npm ci
-npm test
-npm run build
-```
-
-GitHub Actions checks and packages Windows and Mac from `main`. A version tag publishes a release after successful checks. The Mac package uses the SHA256-verified official Electron ARM64 runtime; native Mac testing remains necessary. No iOS build is included in this update.
-
-See [GITHUB_RELEASES.md](GITHUB_RELEASES.md) for local packaging and publishing. Third-party licenses are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The application's package currently declares `UNLICENSED`.
+Build from source with Node.js 24: run npm ci, npm test and npm run build in development/guitar-io. The GitHub workflow packages Windows and Mac; a matching version tag publishes the release after checks. See GITHUB_RELEASES.md for the publishing steps and THIRD_PARTY_NOTICES.md for licenses. No iOS build is included.

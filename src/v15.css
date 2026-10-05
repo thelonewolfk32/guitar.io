@@ -1,0 +1,11 @@
+.app-header .update-ready-button {
+  width: 36px; height: 36px; min-width: 36px; padding: 7px;
+  color: var(--accent); border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.app-header .update-ready-button:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}

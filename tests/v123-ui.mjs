@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {serve,fixtures,seed,instrument,capturePlayer} from './library-harness.mjs';
 const desktop=process.argv.includes('--desktop'),profile=desktop?fs.mkdtempSync(path.resolve('test-results/desktop-v123-')):undefined;
 const version=JSON.parse(fs.readFileSync('package.json')).version,server=await serve('dist');
-const browser=desktop?await electron.launch({executablePath:path.resolve(`../../Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+const browser=desktop?await electron.launch({executablePath:path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts',`Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
 const context=desktop?browser.context():await browser.newContext({viewport:{width:1512,height:960}}),page=desktop?await browser.firstWindow():await context.newPage(),url=desktop?'guitario://app/':server.url;
 const button=name=>page.getByRole('button',{name,exact:true}),songs=fixtures(12,16),errors=[];
 page.on('pageerror',e=>errors.push(e.message));

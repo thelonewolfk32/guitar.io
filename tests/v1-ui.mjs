@@ -9,7 +9,7 @@ const root=path.resolve('dist'),server=http.createServer((req,res)=>{const url=n
 await new Promise(r=>server.listen(0,'127.0.0.1',r));fs.mkdirSync('test-results',{recursive:true});
 const desktop=process.argv.includes('--desktop'),version=JSON.parse(fs.readFileSync('package.json','utf8')).version;
 const profile=desktop?fs.mkdtempSync(path.resolve('test-results/desktop-v1-')):undefined;
-const browser=desktop?await electron.launch({executablePath:process.env.GUITARIO_DESKTOP_EXECUTABLE || path.resolve(`../../Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+const browser=desktop?await electron.launch({executablePath:process.env.GUITARIO_DESKTOP_EXECUTABLE || path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts',`Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
 const page=desktop?await browser.firstWindow():await browser.newPage({viewport:{width:1512,height:960}}),errors=[];
 await page.addInitScript(()=>localStorage.setItem('guitario-auto-artwork','off'));page.on('pageerror',e=>errors.push(e.message));
 const button=(name,target=page)=>target.getByRole('button',{name,exact:true});

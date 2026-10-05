@@ -24,3 +24,14 @@ test('a repository without public releases is reported without blocking the app'
  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'guitario-no-release-'));
  try{const service=new updater.UpdateService({directory:dir,currentVersion:'1.4.3',fetcher:async()=>new Response(null,{status:404})});assert.equal((await service.check()).status,'no-release');}finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+
+test('replacement is acknowledged only after the renderer loads, for the installed version',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'guitario-activation-')),file=path.join(dir,'update-result.json');
+ try{
+  await fs.writeFile(file,JSON.stringify({status:'installed',version:'1.5.0',token:'test',activated:false}));
+  const old=new updater.UpdateService({directory:dir,currentVersion:'1.4.4'});await old.load();await old.activate();assert.equal(JSON.parse(await fs.readFile(file)).activated,false);
+  const next=new updater.UpdateService({directory:dir,currentVersion:'1.5.0'});await next.load();assert.equal(JSON.parse(await fs.readFile(file)).activated,false,'metadata load alone is not a healthy startup');
+  await next.activate();const result=JSON.parse(await fs.readFile(file));assert.equal(result.activated,true);assert.equal(result.pid,process.pid);assert.equal(result.token,'test');
+  await fs.writeFile(file,JSON.stringify({status:'failed',version:'1.5.0',message:'Startup failed'}));await old.load();assert.equal(old.status().autoInstallPaused,true,'rollback must not automatically loop the failed update');
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});

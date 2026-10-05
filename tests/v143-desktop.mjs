@@ -4,7 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {fixtures,seed} from './library-harness.mjs';
 import {pairingCode,open} from '../shared/lan-crypto.mjs';
-const root=path.resolve('test-results'),version=JSON.parse(fs.readFileSync('package.json','utf8')).version,executablePath=path.resolve(`../../Guitar-io-${version}-Windows-x64/Guitar.io.exe`),apps=[],profiles=[fs.mkdtempSync(path.join(root,'v143-host-')),fs.mkdtempSync(path.join(root,'v143-client-'))],errors=[];
+const root=path.resolve('test-results'),version=JSON.parse(fs.readFileSync('package.json','utf8')).version,executablePath=path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts',`Guitar-io-${version}-Windows-x64/Guitar.io.exe`),apps=[],profiles=[fs.mkdtempSync(path.join(root,'v143-host-')),fs.mkdtempSync(path.join(root,'v143-client-'))],errors=[];
 const button=(p,name)=>p.getByRole('button',{name,exact:true});
 async function records(page,store){return page.evaluate(async store=>{const d=await new Promise((r,j)=>{const q=indexedDB.open('guitar-io-v1');q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});const rows=await new Promise((r,j)=>{const q=d.transaction(store).objectStore(store).getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});d.close();return store==='songSources'?rows.map(s=>({id:s.id,hasBytes:!!s.source})):rows;},store);}
 try{

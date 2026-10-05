@@ -12,7 +12,7 @@ if(args[0]==='inspect'){const r=await api('/repos/'+repo);console.log(JSON.strin
 if(args[0]==='make-public'){const r=await api('/repos/'+repo,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({private:false})});console.log(JSON.stringify({repository:r.html_url,private:r.private}));}
 if(args[0]==='publish'){
  const version=args[2];if(!/^\d+\.\d+\.\d+$/.test(version || ''))throw Error('Supply a release version.');
- const workspace=path.resolve('../..'),files=[`Guitar-io-${version}-Windows-x64.zip`,`Guitar-io-${version}-macOS-arm64.zip`,`Guitar-io-${version}-Source.zip`,`Guitar-io-${version}-SHA256SUMS.txt`];
+ const workspace=path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts'),files=[`Guitar-io-${version}-Windows-x64.zip`,`Guitar-io-${version}-macOS-arm64.zip`,`Guitar-io-${version}-Source.zip`,`Guitar-io-${version}-SHA256SUMS.txt`];
  for(const file of files)await fs.access(path.join(workspace,file));
  const body=await fs.readFile(`CHANGELOG-v${version}.md`,'utf8');
  const release=await api('/repos/'+repo+'/releases',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tag_name:'v'+version,target_commitish:args[3] || 'main',name:'Guitar.io '+version,body,draft:true,prerelease:false})});

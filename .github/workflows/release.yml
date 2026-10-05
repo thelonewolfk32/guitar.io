@@ -14,6 +14,8 @@ jobs:
       GUITARIO_OUTPUT_DIR: ${{ github.workspace }}/release/artifacts
     steps:
       - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7.0.0
         with:
           node-version: '24'
@@ -35,6 +37,8 @@ jobs:
           $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
       - run: node scripts/package-local.mjs
+      - name: Test packaged Windows update, skipped versions and rollback
+        run: node tests/v150-updater-desktop.mjs
       - run: ./scripts/archive-windows.ps1
       - run: node scripts/fetch-mac-runtime.mjs
       - run: |

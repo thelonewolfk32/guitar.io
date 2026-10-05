@@ -1,8 +1,8 @@
-# Guitar.io v1.4.43 — Apple Silicon Mac
+# Guitar.io v1.5.0 — Apple Silicon Mac
 
-Requires an Apple Silicon Mac and macOS 13 Ventura or later, as specified by the included Electron 44.4.5 runtime. The app contains the same frontend/GP/MIDI code as the verified Windows v1.4.43 package. No Node installation or Windows emulator is needed to run it.
+Requires an Apple Silicon Mac and macOS 13 Ventura or later, as specified by the included Electron 44.4.5 runtime. The app contains the same frontend/GP/MIDI code as the verified Windows v1.5.0 package. No Node installation or Windows emulator is needed to run it.
 
-1. Transfer `Guitar-io-1.4.43-macOS-arm64.zip` to your Mac and double-click the ZIP in Finder. Extract it on the Mac so framework symbolic links and executable permissions are retained.
+1. Transfer `Guitar-io-1.5.0-macOS-arm64.zip` to your Mac and double-click the ZIP in Finder. Extract it on the Mac so framework symbolic links and executable permissions are retained.
 2. Inside the extracted folder, run **Prepare and open Guitar.io.command**. Keep it next to Guitar.io.app and local-signing-entitlements.plist. It verifies the packaged app data, removes quarantine only from this app bundle, ad-hoc signs it for local use and opens it. No administrator access is requested.
 3. If macOS blocks the command, open Terminal, type `/bin/bash ` (including the trailing space), drag the command file into Terminal, and press Return. Review the command before running it if desired. This does not disable Gatekeeper or change global security settings.
 4. After closing the app, drag **Guitar.io.app** to Applications. Future launches can open it directly.

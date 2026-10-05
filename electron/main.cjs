@@ -12,12 +12,13 @@ app.setAppUserModelId('io.guitario.desktop');
 // Normal launches retain the existing Guitar.io library path.
 if (process.env.GUITARIO_TEST_PROFILE) app.setPath('userData', path.resolve(process.env.GUITARIO_TEST_PROFILE));
 const hasLock = app.requestSingleInstanceLock();
-if (!hasLock) app.quit();
+if (!hasLock) { app.quit(); return; }
 let mainWindow;
 let learnWindow;
 let lan;
 app.on('second-instance', () => {
-  if (mainWindow) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.show();
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
   }
@@ -32,7 +33,7 @@ app.whenReady().then(() => {
   let updatePreparation;
   ipcMain.on('updates:prepared',(event,token,error)=>{try{requireApp(event);if(updatePreparation?.token!==token)return;clearTimeout(updatePreparation.timer);const pending=updatePreparation;updatePreparation=undefined;error?pending.reject(new Error(error)):pending.resolve();}catch{}});
   const updates=new UpdateService({directory:app.getPath('userData'),currentVersion:app.getVersion(),fetcher:(url,options)=>net.fetch(url,options),openExternal:url=>shell.openExternal(url),onChange:state=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('updates:changed',state);},installerOptions:{execPath:process.execPath,packaged:app.isPackaged,
-    beforeInstall:async()=>{if(learnWindow&&!learnWindow.isDestroyed())throw Error('Close Learn before updating.');await new Promise((resolve,reject)=>{const token=require('node:crypto').randomUUID(),timer=setTimeout(()=>{updatePreparation=undefined;reject(new Error('Save your changes and try updating again.'));},15000);updatePreparation={token,timer,resolve,reject};mainWindow.webContents.send('updates:prepare',token);});session.defaultSession.flushStorageData();},
+    beforeInstall:async({force=false}={})=>{if(learnWindow&&!learnWindow.isDestroyed()){if(!force)throw Error('UPDATE_BLOCKED: Close Learn before installing.');learnWindow.close();}await new Promise((resolve,reject)=>{const token=require('node:crypto').randomUUID(),timer=setTimeout(()=>{updatePreparation=undefined;reject(new Error('Update preparation timed out. Try again after saving and sync finish.'));},45000);updatePreparation={token,timer,resolve,reject};mainWindow.webContents.send('updates:prepare',token,force);});session.defaultSession.flushStorageData();},
     quit:()=>app.quit()
   }});
   const updatesReady=updates.load();
@@ -40,7 +41,8 @@ app.whenReady().then(() => {
   ipcMain.handle('updates:check',async event=>{requireApp(event);await updatesReady;return updates.check();});
   ipcMain.handle('updates:settings',async(event,value)=>{requireApp(event);await updatesReady;return updates.settings(value);});
   ipcMain.handle('updates:prepare-download',async event=>{requireApp(event);await updatesReady;return updates.prepare();});
-  ipcMain.handle('updates:install',async event=>{requireApp(event);await updatesReady;return updates.install();});
+  ipcMain.handle('updates:install',async(event,options)=>{requireApp(event);if(options!==undefined&&(typeof options!=='object'||options===null||typeof options.force!=='boolean'))throw Error('Invalid installation request.');await updatesReady;return updates.install({force:options?.force===true});});
+  ipcMain.handle('updates:activated',async event=>{requireApp(event);await updatesReady;mainWindow.show();await updates.activate();});
   const {LanService}=require('./lan-bundle.cjs');
   const pendingLan=new Map();let lanSequence=0;
   lan=new LanService((payload,deviceId)=>new Promise((resolve,reject)=>{if(!mainWindow||mainWindow.isDestroyed())return reject(new Error('Open Guitar.io to sync.'));const id=++lanSequence,timer=setTimeout(()=>{pendingLan.delete(id);reject(new Error('Library did not respond.'));},20000);pendingLan.set(id,{resolve,reject,timer});mainWindow.webContents.send('lan:incoming',id,payload,deviceId);}));
@@ -107,7 +109,8 @@ app.whenReady().then(() => {
     if (!url.startsWith('guitario://app/')) event.preventDefault();
   });
   mainWindow.loadURL('guitario://app/');
+  mainWindow.once('ready-to-show',()=>mainWindow.show());
   mainWindow.on('closed',()=>{ if(learnWindow && !learnWindow.isDestroyed()) learnWindow.close(); });
-});
+}).catch(error=>{try{require('node:fs').writeFileSync(path.join(app.getPath('userData'),'startup-error.log'),String(error.stack || error));}catch{}dialog.showErrorBox('Guitar.io could not start',error.message+'\nDetails are saved in startup-error.log.');app.quit();});
 app.on('window-all-closed', () => app.quit());
 app.on('before-quit',()=>{void lan?.stop();});

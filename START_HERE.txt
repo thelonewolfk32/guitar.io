@@ -1,4 +1,4 @@
-Guitar.io V1.4.43
+Guitar.io V1.5.0
 
 Windows: extract the full ZIP, then open Guitar.io.exe.
 Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app.
@@ -8,9 +8,11 @@ Missing metadata repair resumes the existing checkpoint without resetting the li
 Device sync > Show diagnostics (OFF by default) shows failures and exports a report.
 
 Help (?) > version number opens Updates.
-Check for updates downloads, verifies, installs and restarts when an update exists.
+Check for updates downloads and verifies. Click Install update when ready.
+Launch checks always run; A light-green download icon appears at the top right for a new release.
 Auto-updater OFF/ON controls launch downloads and installation while the library is idle.
-Close editors and return to the library before installing.
+Close editors and return to the library, or confirm Force install.
+Active saves/imports must finish. Windows keeps rollback until startup succeeds.
 Mac updates sign in the background. A preparation failure keeps the app open.
 If an older Mac updater fails, manually prepare/replace the app with V1.4.42 once.
 V1.4.3 users must install V1.4.4 once manually to obtain the new installer.

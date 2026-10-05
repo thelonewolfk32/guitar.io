@@ -10,6 +10,11 @@ const when='2026-10-05T08:00:00.000Z';
 const change=(patch,sequence=1,entity='song',id='test',timestamp=when,deviceId='remote')=>({entity,entityId:id,deviceId,timestamp,operation:'upsert',fields:Object.keys(patch),patch,revision:sequence});
 const wire=(c)=>projectSyncRow(mergeSyncRow(undefined,c,c.revision),0);
 
+
+
+
+
+
 test('per-field clocks converge for offline edits and deterministic concurrent ties',()=>{
   const first=mergeSyncRow(undefined,change({title:'Original',artist:'Band'},1,'song','test','2026-10-05T07:00:00.000Z'),1);
   const a=mergeSyncRow(first,change({title:'PC'},2,'song','test',when,'PC'),2);
@@ -87,4 +92,19 @@ test('an unseen song edited past a checkpoint recovers its base, album, edits an
  const index=(await readLibraryIndex()).songs.find(s=>s.id===id);assert.equal(index.album,'Saved album');assert.equal(index.lastPlayedBar,3);assert.equal(index.artworkAssetId,'unavailable-cover');assert.equal(await syncSetting('pull:late'),300);assert.deepEqual(await missingSyncBases([delta]),[]);
  const recovered=(await syncBaselines([full.key]))[0];assert.equal(recovered.patch.hash,original.hash);assert.equal(recovered.mapPatches.noteEdits['0:0:0:0:0:0'].fret,3);assert(!('source' in recovered.patch));
  await applySyncPage([wire(change({hash:original.hash,byteLength:source.length},301,'source',id,'2095-01-01T00:04:00.000Z'))]);assert.equal((await contentRecord('source',id)).source,undefined);
+});
+
+
+test('update preparation pauses incoming metadata and resumes it without advancing a checkpoint',async()=>{
+ const {SyncEngine}=await import('../src/lan-sync.ts'),previous=globalThis.window;
+ globalThis.window={dispatchEvent:()=>{},localStorage:{setItem:()=>{}}};
+ const engine=new SyncEngine(()=>true,()=>{});engine.config={enabled:true,id:'local',name:'PC'};
+ try{
+  const original=fixtures(1,4)[0],song={...original,id:'update-pause-song',source:new Uint8Array(original.source),artworkAssetId:undefined};await saveSongs([song]);
+  const row=wire(change({title:'New remote title'},1,'song',song.id,'2200-01-01T00:00:00.000Z'));
+  await engine.pauseForUpdate();assert.equal((await engine.serve({op:'head'},'remote')).ready,false);
+  assert.deepEqual(await engine.serve({op:'apply',rows:[row]},'remote'),{busy:true});assert.equal((await readSong(song.id)).title,song.title);
+  engine.resumeAfterUpdate();assert.equal((await engine.serve({op:'head'},'remote')).ready,true);
+  assert.equal((await engine.serve({op:'apply',rows:[row]},'remote')).accepted,1);assert.equal((await readSong(song.id)).title,'New remote title');
+ }finally{engine.stop();globalThis.window=previous;}
 });

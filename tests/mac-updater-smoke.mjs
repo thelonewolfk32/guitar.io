@@ -42,7 +42,7 @@ try{
  assert.equal(await fs.access(stage).then(()=>true).catch(()=>false),false,'Staging folder was not removed');
  // Execute the signed replacement under AMFI, including its bundled JS.
  const executed=await run(execPath,['-e',"console.log(require(process.argv[1]).version)",path.join(target,'Contents/Resources/app.asar/package.json')],{env:{...process.env,ELECTRON_RUN_AS_NODE:'1'}});assert.equal(executed.stdout.trim(),version);
- const updates=new service.UpdateService({directory:profile,currentVersion:version,platform:'darwin',arch:'arm64',installerOptions:{execPath:path.join(target,'Contents/MacOS/Guitar.io'),packaged:true}});await updates.load();
+ const updates=new service.UpdateService({directory:profile,currentVersion:version,platform:'darwin',arch:'arm64',installerOptions:{execPath:path.join(target,'Contents/MacOS/Guitar.io'),packaged:true}});await updates.load();assert.notEqual(JSON.parse(await fs.readFile(path.join(profile,'update-result.json'),'utf8')).activated,true);await updates.activate();
  assert.equal(JSON.parse(await fs.readFile(path.join(profile,'update-result.json'),'utf8')).activated,true);assert.equal(await fs.access(backup).then(()=>true).catch(()=>false),false);
  // An unreadable permission file must fail before readiness/exit/replacement.
  const failedStage=path.join(profile,'app-updates','download-bad'),badApp=path.join(failedStage,'extracted/Guitar.io.app');await fs.mkdir(path.dirname(badApp),{recursive:true});await run('/usr/bin/ditto',[target,badApp]);

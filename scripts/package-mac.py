@@ -22,7 +22,8 @@ version, electron = config["version"], config["devDependencies"]["electron"]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--runtime", type=Path, default=project / f"release/mac-runtime/electron-v{electron}-darwin-arm64.zip")
 parser.add_argument("--checksums", type=Path, default=project / "release/mac-runtime/SHASUMS256.txt")
-parser.add_argument("--asar", type=Path, default=project.parent.parent / f"Guitar-io-{version}-Windows-x64/resources/app.asar")
+output_root = Path(os.environ.get('GUITARIO_OUTPUT_DIR', project / 'release/artifacts'))
+parser.add_argument("--asar", type=Path, default=output_root / f"Guitar-io-{version}-Windows-x64/resources/app.asar")
 args = parser.parse_args()
 with args.runtime.open("rb") as runtime_file:
     runtime_hash = hashlib.file_digest(runtime_file, "sha256").hexdigest()
@@ -39,7 +40,7 @@ if json.loads(asar[start:start + package["size"]])["version"] != version:
     raise ValueError("ASAR is not the current build.")
 asar_hash = hashlib.sha256(asar).hexdigest()
 folder = f"Guitar-io-{version}-macOS-arm64"
-output = Path(os.environ.get('GUITARIO_OUTPUT_DIR',project.parent.parent)) / f"{folder}.zip"
+output = output_root / f"{folder}.zip"
 app = f"{folder}/Guitar.io.app"
 
 def renamed(name):

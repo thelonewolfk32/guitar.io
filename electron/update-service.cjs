@@ -22,9 +22,16 @@ class UpdateService{
   async load(){try{const saved=JSON.parse(await fs.readFile(this.file,'utf8'));this.config.autoUpdate=saved.autoUpdate ?? saved.checkOnLaunch!==false;this.config.checkOnLaunch=this.config.autoUpdate;if(saved.cache?.repository===this.config.repository&&saved.cache.data&&saved.cache.data.assets?.some(a=>/^sha256:[a-f0-9]{64}$/.test(a.digest || ''))){this.result=releaseInfo(saved.cache.data,this.currentVersion,this.platform,this.arch,this.config.repository);this.cache=saved.cache;}}catch{}
     const outcome=await fs.readFile(path.join(path.dirname(this.file),'update-result.json'),'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);
     if(outcome?.status==='failed')this.result={status:'error',message:outcome.message || 'Update could not finish. Try again.'};
-    if(outcome?.status==='installed'&&outcome.version===this.currentVersion){outcome.activated=true;await fs.writeFile(path.join(path.dirname(this.file),'update-result.json'),JSON.stringify(outcome));if(this.platform==='darwin'&&/^[a-f0-9-]{36}$/.test(outcome.rollbackToken || '')&&this.installer){const parent=path.dirname(path.resolve(path.dirname(this.installer.execPath),'../..'));const backup=path.join(parent,`.Guitar.io-rollback-${outcome.rollbackToken}.app`);if(!(await fs.lstat(backup).catch(()=>undefined))?.isSymbolicLink())await require('./update-installer.cjs').removeStage(parent,backup).catch(()=>{});}}
+    this.failedInstall=outcome?.status==='failed';
     return this.status();}
-  status(){return {...this.config,...this.result,currentVersion:this.currentVersion,platform:this.platform,arch:this.arch};}
+  status(){return {...this.config,...this.result,currentVersion:this.currentVersion,platform:this.platform,arch:this.arch,autoInstallPaused:!!this.failedInstall};}
+  async activate(){
+    const file=path.join(path.dirname(this.file),'update-result.json'),outcome=await fs.readFile(file,'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);
+    if(outcome?.status!=='installed'||outcome.version!==this.currentVersion||outcome.activated)return;
+    outcome.activated=true;outcome.pid=process.pid;this.failedInstall=false;
+    const temp=file+'.activation.tmp';await fs.writeFile(temp,JSON.stringify(outcome));await fs.rename(temp,file);
+    if(this.platform==='darwin'&&/^[a-f0-9-]{36}$/.test(outcome.rollbackToken || '')&&this.installer){const parent=path.dirname(path.resolve(path.dirname(this.installer.execPath),'../..')),backup=path.join(parent,`.Guitar.io-rollback-${outcome.rollbackToken}.app`);if(!(await fs.lstat(backup).catch(()=>undefined))?.isSymbolicLink())await require('./update-installer.cjs').removeStage(parent,backup).catch(()=>{});}
+  }
   async persist(){this.writing=(this.writing || Promise.resolve()).catch(()=>{}).then(async()=>{await fs.mkdir(path.dirname(this.file),{recursive:true});const temp=this.file+'.tmp';await fs.writeFile(temp,JSON.stringify({...this.config,cache:this.cache}),'utf8');await fs.rename(temp,this.file);});await this.writing;}
   async settings(value){if(typeof value?.autoUpdate!=='boolean'&&typeof value?.checkOnLaunch!=='boolean')throw Error('Invalid update preference.');this.config.autoUpdate=value.autoUpdate ?? value.checkOnLaunch;this.config.checkOnLaunch=this.config.autoUpdate;await this.persist();this.onChange(this.status());return this.status();}
   async check(){
@@ -44,7 +51,7 @@ class UpdateService{
     })().finally(()=>{this.pending=undefined;});return this.pending;
   }
   async prepare(){if(!this.installer)throw Error('Update installation is unavailable.');if(!['available','ready'].includes(this.result.status))throw Error('Check for updates first.');try{await this.installer.prepare(this.result);return this.status();}catch(error){this.changed({status:'error',message:error.message});return this.status();}}
-  async install(){try{if(!this.installer)throw Error('Update installation is unavailable.');this.changed({message:''});await this.installer.install();return this.status();}catch(error){this.changed({status:this.installer?.ready?'ready':'error',message:error.message});throw error;}}
+  async install(options={}){try{if(!this.installer)throw Error('Update installation is unavailable.');this.changed({message:''});await this.installer.install(true,options);return this.status();}catch(error){this.changed({status:this.installer?.ready?'ready':'error',message:error.message});throw error;}}
   async open(target){const url=target==='download'&&this.result.status==='available'?this.result.downloadUrl:target==='release'&&this.result.releaseUrl?this.result.releaseUrl:`https://github.com/${this.config.repository}/releases`;await this.openExternal(url);}
 }
 module.exports={UpdateService,repositorySlug,versionParts,newer,releaseInfo};

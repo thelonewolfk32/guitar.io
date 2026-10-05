@@ -51,23 +51,23 @@ Do not replace published ZIPs with different code under the same version. Ship a
 
 `.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. Native Apple Silicon jobs on macOS 15 and 26 test bundled Electron staging, signing, replacement, invalid entitlements and cleanup before tagged publication. Interactive MacBook playback, relaunch and Gatekeeper still need a user-session test.
 
-For version 1.4.43:
+For version 1.5.0:
 
 1. Pull `main`, make changes, then run in the source folder:
 
    ```sh
-   npm version 1.4.43 --no-git-tag-version
+   npm version 1.5.0 --no-git-tag-version
    npm test
    npm run build
    ```
 
-2. Add `CHANGELOG-v1.4.43.md` and `VALIDATION-v1.4.43.md`. Record changes and actual test results; the packages include these documents.
+2. Add `CHANGELOG-v1.5.0.md` and `VALIDATION-v1.5.0.md`. Record changes and actual test results; the packages include these documents.
 3. Commit the source, version/lock files and documents to `main`, then push.
 4. After checking the `main` workflow is green, create and push the tag:
 
    ```sh
-   git tag v1.4.43
-   git push origin v1.4.43
+   git tag v1.5.0
+   git push origin v1.5.0
    ```
 
 5. The tag workflow checks that the version matches `package.json`, builds both ZIPs, uploads them to a draft release, and publishes the complete release after successful checks.
@@ -101,10 +101,12 @@ Open Help (?) and click the version number. The menu contains Check for updates 
 
 Checks fetch small release metadata with ETags. Downloads require the exact platform ZIP, GitHub's SHA256 asset digest, matching package version/identity and safe archive paths. Keep both desktop assets uploaded before publishing. The workflow's release uploads supply the digest through GitHub's API automatically.
 
-A manual check downloads, verifies, installs and restarts if a newer version exists. Auto-updater downloads on launch and installs when the library is idle. Open players, editors, active saves and sync work defer installation. The same app-data profile remains in use. Windows replaces packaged files and rolls back partial failure; unrelated folder files are preserved. Mac normalises signing entitlements, signs and verifies the new bundle before closing Guitar.io, then swaps and reopens it without Terminal. Failed preparation keeps the app open with a specific error and local `update-install.log`. Interactive Mac updating needs a MacBook test.
+A manual check downloads and verifies a newer version, then waits for **Install update**. The top-right light-green download icon opens this menu. Launch checks also run with Auto-updater OFF. Optional **Force install** closes open views after warning about unsaved form changes; it cannot bypass an active save or import. Sync drains before exit. Auto-updater downloads on launch and installs when the library is idle. Open players, editors, active saves and sync work defer installation. The same app-data profile remains in use. Windows replaces packaged files, restarts visibly, and keeps rollback until the library and native window open; partial replacement or failed startup restores the previous app; unrelated folder files are preserved. Mac normalises signing entitlements, signs and verifies the new bundle before closing Guitar.io, then swaps and reopens it without Terminal. Failed preparation keeps the app open with a specific error and local `update-install.log`. Interactive Mac updating needs a MacBook test.
 
-An older V1.4.4/V1.4.41 Mac updater that fails with `AMFIUnserializeXML` needs one manual preparation/replacement of V1.4.42 to obtain the corrected installer. Do not remove the Application Support folder. Use increasing numeric versions: `1.4.5` is older than `1.4.41`; the next release after this repair should be `1.4.43` or `1.5.0`.
+An older V1.4.4/V1.4.41 Mac updater that fails with `AMFIUnserializeXML` needs one manual preparation/replacement of V1.4.42 to obtain the corrected installer. Do not remove the Application Support folder. Use increasing numeric versions: `1.4.5` is older than `1.4.41`; the next release after this repair should be `1.5.0`.
 
 V1.4.3 only has the earlier download checker. Install V1.4.4 manually once; subsequent versions can be installed from inside the app. Fully signed/notarized Mac distribution remains a later Apple Developer setup.
 
 Official references: [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository), [Releases API](https://docs.github.com/en/rest/releases/releases), [Electron lifecycle](https://www.electronjs.org/docs/latest/api/app).
+
+Packaging defaults to `release/artifacts` inside the source folder and uses the pinned dependency runtime. No older app folder is required. The maintained local Windows installation is `Guitar.io.exe` in the main workspace folder, beside `development/guitar-io`. Updating replaces packaged files in place and preserves the development folder.

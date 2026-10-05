@@ -2,7 +2,7 @@ $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $projectRoot=[System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $version=(Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json).version
-$outputRoot=if($env:GUITARIO_OUTPUT_DIR){[System.IO.Path]::GetFullPath($env:GUITARIO_OUTPUT_DIR)}else{[System.IO.Path]::GetFullPath((Join-Path $projectRoot '../..'))}
+$outputRoot=if($env:GUITARIO_OUTPUT_DIR){[System.IO.Path]::GetFullPath($env:GUITARIO_OUTPUT_DIR)}else{[System.IO.Path]::GetFullPath((Join-Path $projectRoot 'release/artifacts'))}
 $folder=Join-Path $outputRoot "Guitar-io-$version-Windows-x64"
 $zip=Join-Path $outputRoot "Guitar-io-$version-Windows-x64.zip"
 if(Test-Path -LiteralPath $zip){throw 'Release archive already exists. Increase the version instead of overwriting it.'}

@@ -6,7 +6,7 @@ import {serve,fixtures,seed,capturePlayer,instrument} from './library-harness.mj
 
 const desktop=process.argv.includes('--desktop'),profile=desktop?fs.mkdtempSync(path.resolve('test-results/desktop-v122-')):undefined;
 const server=await serve('dist'),version=JSON.parse(fs.readFileSync('package.json')).version;
-const browser=desktop?await electron.launch({executablePath:path.resolve(`../../Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+const browser=desktop?await electron.launch({executablePath:path.resolve(process.env.GUITARIO_OUTPUT_DIR || 'release/artifacts',`Guitar-io-${version}-Windows-x64/Guitar.io.exe`),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
 const context=desktop?browser.context():await browser.newContext({viewport:{width:1512,height:960}}),page=desktop?await browser.firstWindow():await context.newPage(),url=desktop?'guitario://app/':server.url,errors=[];
 const button=name=>page.getByRole('button',{name,exact:true});page.on('pageerror',e=>errors.push(e.message));
 const songs=fixtures(12,16);songs.forEach((s,i)=>{s.lastPlayedAt=new Date(Date.UTC(2026,9,3,0,i)).toISOString();});

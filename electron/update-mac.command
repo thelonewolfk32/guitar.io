@@ -2,7 +2,14 @@
 set -euo pipefail
 stage="$(cd -- "$(dirname "$0")" && pwd -P)"
 source "$stage/plan.sh"
-[[ "$STAGE" == "$stage" && "$NEW_APP" == "$stage/"* && "$TARGET" == *.app && ! -L "$TARGET" ]]
+# macOS aliases /var to /private/var. Compare physical paths consistently,
+# including temporary profiles, rather than skipping cleanup on an alias.
+if [[ "$TARGET" != *.app || -L "$TARGET" ]]; then exit 1; fi
+STAGE="$(cd -- "$STAGE" && pwd -P)"
+PROFILE="$(cd -- "$PROFILE" && pwd -P)"
+NEW_APP="$(cd -- "$NEW_APP" && pwd -P)"
+TARGET="$(cd -- "$TARGET" && pwd -P)"
+if [[ "$STAGE" != "$stage" || "$NEW_APP" != "$stage/"* || "$TARGET" != *.app ]]; then exit 1; fi
 incoming="$(dirname "$TARGET")/.Guitar.io-update-$TOKEN.app"
 backup="$(dirname "$TARGET")/.Guitar.io-rollback-$TOKEN.app"
 renamed=0
@@ -33,7 +40,7 @@ done
 if /bin/kill -0 "$PARENT_PID" 2>/dev/null; then fail; exit 1; fi
 /bin/mv "$TARGET" "$backup"; renamed=1
 /bin/mv "$incoming" "$TARGET"
-[[ "$RESTART" != 1 ]] || /usr/bin/open "$TARGET"
 printf '{"status":"installed","version":"%s","rollbackToken":"%s"}' "$VERSION" "$TOKEN" > "$PROFILE/update-result.json"
+[[ "$RESTART" != 1 ]] || /usr/bin/open "$TARGET"
 # Verified sibling app and staging paths only; preserve the old app for rollback.
 if [[ "$stage" == "$PROFILE/app-updates/download-"* ]]; then /bin/rm -rf "$stage" || true; fi

@@ -1,4 +1,8 @@
-# Current release: Guitar.io V1.4.41
+# Current release: Guitar.io V1.4.42
+
+Mac updater repair. User reported AMFI XML entitlement parse failure and the old blanket approval fallback closing the app. Canonicalise XML with plutil, generate DER entitlements, verify before readiness/quit, retain phase errors and profile update-install.log. No automatic Terminal fallback; failed preparation keeps old app open. Stage bundled scripts/plist with readFile/writeFile through ASAR-aware fs. Test actual packaged Electron staging/installer on both macOS 15 and 26, including corrupt entitlements, preserved old app/profile, rollback and cleanup. Old failing Mac installers need a one-time manual preparation/replacement of V1.4.42. User accepted 1.4.42 because 1.4.5 would be older than 1.4.41. No local installation/profile changes; publish GitHub Windows/Mac assets after native checks. Keep 5% speeds unchanged.
+
+# Previous release: Guitar.io V1.4.41
 
 Small GitHub-only update to test the V1.4.4 updater. Percentage/BPM controls and section speed select 5% increments; combined applied playback rates also snap to 5%. Native YouTube requests enforce the same grid. GP/imported tempos and raw recording sync anchors remain exact; no library migration or catalogue rewrite. Windows and Apple Silicon releases are built/published by GitHub Actions; do not replace or manually upgrade the user’s installed app for this test.
 

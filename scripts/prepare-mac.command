@@ -24,7 +24,13 @@ fi
 echo 'Preparing Guitar.io for local use on this Mac…'
 # Scope quarantine removal to this verified bundle; never change system policy.
 /usr/bin/xattr -dr com.apple.quarantine "$app_path" 2>/dev/null || true
-/usr/bin/codesign --force --deep --sign - --entitlements "$package_dir/local-signing-entitlements.plist" "$app_path"
+# AMFI accepts a narrower XML format than the general property-list parser.
+# Let macOS serialise the entitlements before embedding them in the signature.
+canonical="$(/usr/bin/mktemp -t guitario-signing)"
+trap '/bin/rm -f "$canonical"' EXIT
+/usr/bin/plutil -lint "$package_dir/local-signing-entitlements.plist"
+/usr/bin/plutil -convert xml1 -o "$canonical" "$package_dir/local-signing-entitlements.plist"
+/usr/bin/codesign --force --deep --sign - --generate-entitlement-der --entitlements "$canonical" "$app_path"
 /usr/bin/codesign --verify --deep --strict "$app_path"
 echo 'Prepared. You can move Guitar.io.app to Applications after closing it.'
-/usr/bin/open "$app_path"
+[[ "${GUITARIO_PREPARE_NO_OPEN:-0}" == 1 ]] || /usr/bin/open "$app_path"

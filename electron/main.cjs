@@ -33,8 +33,7 @@ app.whenReady().then(() => {
   ipcMain.on('updates:prepared',(event,token,error)=>{try{requireApp(event);if(updatePreparation?.token!==token)return;clearTimeout(updatePreparation.timer);const pending=updatePreparation;updatePreparation=undefined;error?pending.reject(new Error(error)):pending.resolve();}catch{}});
   const updates=new UpdateService({directory:app.getPath('userData'),currentVersion:app.getVersion(),fetcher:(url,options)=>net.fetch(url,options),openExternal:url=>shell.openExternal(url),onChange:state=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('updates:changed',state);},installerOptions:{execPath:process.execPath,packaged:app.isPackaged,
     beforeInstall:async()=>{if(learnWindow&&!learnWindow.isDestroyed())throw Error('Close Learn before updating.');await new Promise((resolve,reject)=>{const token=require('node:crypto').randomUUID(),timer=setTimeout(()=>{updatePreparation=undefined;reject(new Error('Save your changes and try updating again.'));},15000);updatePreparation={token,timer,resolve,reject};mainWindow.webContents.send('updates:prepare',token);});session.defaultSession.flushStorageData();},
-    quit:()=>app.quit(),
-    attention:async(command,message)=>{const choice=await dialog.showMessageBox(mainWindow,{type:'info',title:'Guitar.io update',message:'Mac update needs approval',detail:message+'\nIf macOS blocks the command, open System Settings → Privacy & Security → Open Anyway, then run it again.',buttons:['Run command','Later'],defaultId:0,cancelId:1});if(choice.response===0){const {execFile}=require('node:child_process');await require('node:util').promisify(execFile)('/usr/bin/open',['-a','Terminal',command]);app.quit();}}
+    quit:()=>app.quit()
   }});
   const updatesReady=updates.load();
   ipcMain.handle('updates:status',async event=>{requireApp(event);await updatesReady;return updates.status();});

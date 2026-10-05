@@ -7,7 +7,7 @@ import updater from '../electron/update-service.cjs';
 const repo='thelonewolfk32/guitar.io';
 const release=(version='1.5.0')=>({tag_name:'v'+version,draft:false,prerelease:false,assets:['Windows-x64','macOS-arm64'].map(platform=>({name:`Guitar-io-${version}-${platform}.zip`,browser_download_url:`https://github.com/${repo}/releases/download/v${version}/Guitar-io-${version}-${platform}.zip`}))});
 test('release checks compare stable numeric versions and choose the exact desktop build',()=>{
- assert(updater.newer('1.4.41','1.4.4'));assert(updater.newer('v1.10.0','1.9.0'));assert(!updater.newer('1.4.3','1.4.3'));assert(!updater.newer('1.4.4-beta.1','1.4.3'));
+ assert(updater.newer('1.4.42','1.4.41'));assert(updater.newer('1.4.42','1.4.4'));assert(!updater.newer('1.4.5','1.4.41'));assert(updater.newer('1.4.41','1.4.4'));assert(updater.newer('v1.10.0','1.9.0'));assert(!updater.newer('1.4.3','1.4.3'));assert(!updater.newer('1.4.4-beta.1','1.4.3'));
  assert.equal(updater.releaseInfo(release(),'1.4.3','darwin','arm64',repo).assetName,'Guitar-io-1.5.0-macOS-arm64.zip');
  assert.equal(updater.releaseInfo(release(),'1.4.3','win32','x64',repo).status,'available');
  assert.equal(updater.releaseInfo(release(),'1.4.3','darwin','x64',repo).status,'missing-build');

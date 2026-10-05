@@ -54,7 +54,11 @@ jobs:
           retention-days: 14
   mac-updater:
     needs: build
-    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7.0.1

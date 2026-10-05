@@ -1,6 +1,6 @@
 {
   "name": "guitar-io",
-  "version": "1.4.41",
+  "version": "1.4.42",
   "private": true,
   "description": "A local-first guitar library and section-based practice workspace.",
   "author": "Guitar.io",

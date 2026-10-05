@@ -1,8 +1,8 @@
-# Guitar.io v1.4.41 — Apple Silicon Mac
+# Guitar.io v1.4.42 — Apple Silicon Mac
 
-Requires an Apple Silicon Mac and macOS 13 Ventura or later, as specified by the included Electron 44.4.5 runtime. The app contains the same frontend/GP/MIDI code as the verified Windows v1.4.41 package. No Node installation or Windows emulator is needed to run it.
+Requires an Apple Silicon Mac and macOS 13 Ventura or later, as specified by the included Electron 44.4.5 runtime. The app contains the same frontend/GP/MIDI code as the verified Windows v1.4.42 package. No Node installation or Windows emulator is needed to run it.
 
-1. Transfer `Guitar-io-1.4.41-macOS-arm64.zip` to your Mac and double-click the ZIP in Finder. Extract it on the Mac so framework symbolic links and executable permissions are retained.
+1. Transfer `Guitar-io-1.4.42-macOS-arm64.zip` to your Mac and double-click the ZIP in Finder. Extract it on the Mac so framework symbolic links and executable permissions are retained.
 2. Inside the extracted folder, run **Prepare and open Guitar.io.command**. Keep it next to Guitar.io.app and local-signing-entitlements.plist. It verifies the packaged app data, removes quarantine only from this app bundle, ad-hoc signs it for local use and opens it. No administrator access is requested.
 3. If macOS blocks the command, open Terminal, type `/bin/bash ` (including the trailing space), drag the command file into Terminal, and press Return. Review the command before running it if desired. This does not disable Gatekeeper or change global security settings.
 4. After closing the app, drag **Guitar.io.app** to Applications. Future launches can open it directly.
@@ -28,4 +28,6 @@ The app cannot sign itself before Gatekeeper validates it. Once an Apple Develop
 
 ## Updates during testing
 
-After the initial preparation, use Help (?) → version number → Check for updates. The custom updater downloads and verifies the new bundle, attempts local signing, waits for Guitar.io to close, then replaces and reopens the app. If preparation fails, it offers the command in Terminal and Privacy & Security approval instructions. Native Mac updating must be tested on the MacBook. Standard Developer ID signing and notarization can replace this local preparation later.
+After the initial preparation, use Help (?) → version number → Check for updates. The updater verifies the download, validates and normalises signing entitlements, signs and verifies the new bundle, then closes, replaces and reopens Guitar.io. It runs without a Terminal window. If preparation fails, Guitar.io stays open and shows the failing step; details are saved in `~/Library/Application Support/Guitar.io/update-install.log`. Interactive Gatekeeper/relaunch still needs a MacBook check. Standard Developer ID signing and notarization can replace this local preparation later.
+
+If your older V1.4.4/V1.4.41 updater fails with `AMFIUnserializeXML`, quit Guitar.io and manually prepare this V1.4.42 ZIP once, then replace your existing app with the prepared Guitar.io.app. Keep your Application Support folder; it holds the library. The old updater cannot fix its own signing command by downloading a new app. Once this release is installed, future updates use the corrected background installer.

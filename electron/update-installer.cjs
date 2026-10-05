@@ -44,7 +44,7 @@ async function validateArchive(file,folder,platform){
 }
 async function asarVersion(file){const handle=await raw.open(file,'r');try{const head=Buffer.alloc(16);await handle.read(head,0,16,0);const headerSize=head.readUInt32LE(4),length=head.readUInt32LE(12);if(length>8*1024*1024)throw Error('Invalid app data.');const bytes=Buffer.alloc(length);await handle.read(bytes,0,length,16);const item=JSON.parse(bytes).files?.['package.json'];if(!item||item.size>65536)throw Error('Invalid application package.');const data=Buffer.alloc(item.size);await handle.read(data,0,item.size,8+headerSize+Number(item.offset));const pkg=JSON.parse(data);if(pkg.name!=='guitar-io'||pkg.main!=='electron/main.cjs')throw Error('Unexpected application identity.');return pkg.version;}finally{await handle.close();}}
 class UpdateInstaller{
- constructor({directory,platform,execPath,fetcher,packaged,notify=()=>{},beforeInstall=async()=>{},quit=()=>{},attention=async()=>{}}){Object.assign(this,{directory,platform,execPath,fetcher,packaged,notify,beforeInstall,quit,attention});this.root=path.join(directory,'app-updates');}
+ constructor({directory,platform,execPath,fetcher,packaged,notify=()=>{},beforeInstall=async()=>{},quit=()=>{}}){Object.assign(this,{directory,platform,execPath,fetcher,packaged,notify,beforeInstall,quit});this.root=path.join(directory,'app-updates');}
  async prepare(release){
   if(this.preparing)return this.preparing;
   if(this.ready?.version===release.latestVersion)return this.ready;
@@ -80,25 +80,32 @@ class UpdateInstaller{
    const plan={target,source:ready.source,files:ready.files,stage:ready.stage,version:ready.version,parentPid:process.pid,restart,executable:this.execPath,profile:this.directory,token:randomUUID()};
    const planFile=path.join(ready.stage,'install.json'),script=path.join(ready.stage,this.platform==='darwin'?'Install Guitar.io.command':'install.ps1');
    await fs.unlink(path.join(ready.stage,'handshake.json')).catch(()=>{});
-   await fs.writeFile(planFile,JSON.stringify(plan));await fs.copyFile(path.join(__dirname,this.platform==='darwin'?'update-mac.command':'update-windows.ps1'),script);
-   let child;const log=await raw.open(path.join(ready.stage,'install.log'),'a');
+   await fs.writeFile(planFile,JSON.stringify(plan));
+   // Read bundled bytes through Electron's ASAR-aware fs, then write an ordinary
+   // file. The OS tools must never receive an archive-backed file descriptor.
+   await fs.writeFile(script,await fs.readFile(path.join(__dirname,this.platform==='darwin'?'update-mac.command':'update-windows.ps1')));
+   let child;const log=await raw.open(path.join(this.directory,'update-install.log'),'w');
    // Shell-launch the installer independently so it survives Electron closing.
    // DETACHED_PROCESS alone can make Windows PowerShell exit before its script.
-   if(this.platform==='win32'){
+   try{if(this.platform==='win32'){
     const launcher=path.join(ready.stage,'launch.ps1');await fs.copyFile(path.join(__dirname,'launch-update-windows.ps1'),launcher);
     child=spawn(path.join(process.env.SystemRoot || 'C:\\Windows','System32/WindowsPowerShell/v1.0/powershell.exe'),['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',launcher,'-Script',script,'-Plan',planFile],{cwd:ready.stage,stdio:['ignore',log.fd,log.fd],windowsHide:true});
    }
    else{
-    await fs.copyFile(path.join(__dirname,'../scripts/mac-entitlements.plist'),path.join(ready.stage,'entitlements.plist')).catch(async()=>fs.copyFile(path.join(__dirname,'mac-entitlements.plist'),path.join(ready.stage,'entitlements.plist')));
+    const entitlements=await fs.readFile(path.join(__dirname,'../scripts/mac-entitlements.plist')).catch(()=>fs.readFile(path.join(__dirname,'mac-entitlements.plist')));
+    await fs.writeFile(path.join(ready.stage,'entitlements.plist'),entitlements);
     // The command uses a fixed, safely quoted data file, never interpolated code.
     const quote=s=>"'"+String(s).replace(/'/g,"'\\''")+"'";
     await fs.writeFile(path.join(ready.stage,'plan.sh'),Object.entries({TARGET:target,NEW_APP:path.join(ready.source,'Guitar.io.app'),STAGE:ready.stage,PARENT_PID:process.pid,VERSION:ready.version,PROFILE:this.directory,RESTART:restart?'1':'0',TOKEN:plan.token}).map(([k,v])=>`${k}=${quote(v)}`).join('\n')+'\n');
     await fs.chmod(script,0o755);child=spawn('/bin/bash',[script],{detached:true,stdio:['ignore',log.fd,log.fd]});
    }
-   let spawnError;child.on('error',error=>{spawnError=error;});child.on('exit',(code,signal)=>{if(code||signal)spawnError=Error('Update preparation failed. Try again.');});child.unref();await log.close();
-   let launched=false;for(let n=0;n<600;n++){if(spawnError)throw spawnError;const state=await fs.readFile(path.join(ready.stage,'handshake.json'),'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);if(state?.token===plan.token){if(state.status==='ready'){launched=true;break;}throw Error(state.message || 'Update preparation failed.');}await new Promise(r=>setTimeout(r,100));}
+   }catch(error){await log.close();throw error;}
+   let spawnError;child.on('error',error=>{spawnError=error;});child.on('exit',(code,signal)=>{if(code||signal)spawnError=Error('Update preparation failed. See update-install.log for details.');});child.unref();await log.close();
+   // Read the helper's specific error before considering its exit code. Signing
+   // failures are not macOS approval requests, and must not close the old app.
+   let launched=false;for(let n=0;n<600;n++){const state=await fs.readFile(path.join(ready.stage,'handshake.json'),'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);if(state?.token===plan.token){if(state.status==='ready'){launched=true;break;}throw Error(state.message || 'Update preparation failed.');}if(spawnError)throw spawnError;await new Promise(r=>setTimeout(r,100));}
    if(!launched)throw Error('The update could not start. Try again.');this.notify({status:'installing'});this.quit();
-  }catch(error){this.installing=false;if(this.platform==='darwin'){const script=path.join(ready.stage,'Install Guitar.io.command');await this.attention(script,error.message);}throw error;}
+  }catch(error){this.installing=false;throw error;}
  }
 }
 module.exports={UpdateInstaller,validateArchive,asarVersion,within,removeStage};

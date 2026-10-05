@@ -22,11 +22,11 @@ try{
  const quote=s=>"'"+String(s).replace(/'/g,"'\\''")+"'";
  await fs.writeFile(path.join(stage,'plan.sh'),Object.entries({TARGET:target,NEW_APP:incoming,STAGE:stage,PARENT_PID:2147483647,VERSION:version,PROFILE:profile,RESTART:'0',TOKEN:token}).map(([k,v])=>`${k}=${quote(v)}`).join('\n')+'\n');
  await fs.copyFile('scripts/mac-entitlements.plist',path.join(stage,'entitlements.plist'));await fs.copyFile('electron/update-mac.command',path.join(stage,'Install Guitar.io.command'));
- await run('/bin/bash',[path.join(stage,'Install Guitar.io.command')],{timeout:180000});
+ const execution=await run('/bin/bash',[path.join(stage,'Install Guitar.io.command')],{timeout:180000});if(execution.stderr)console.log(execution.stderr);
  const outcome=JSON.parse(await fs.readFile(path.join(profile,'update-result.json'),'utf8'));assert.equal(outcome.status,'installed');
  await run('/usr/bin/codesign',['--verify','--deep','--strict',target]);
  assert.equal(await fs.readFile(path.join(profile,'library-marker'),'utf8'),'Keep library');assert.equal(await fs.access(path.join(target,'old-only-marker')).then(()=>true).catch(()=>false),false);
- const backup=path.join(root,`.Guitar.io-rollback-${token}.app`);assert.equal(await fs.readFile(path.join(backup,'old-only-marker'),'utf8'),'old');assert.equal(await fs.access(stage).then(()=>true).catch(()=>false),false);
+ const backup=path.join(root,`.Guitar.io-rollback-${token}.app`);assert.equal(await fs.readFile(path.join(backup,'old-only-marker'),'utf8'),'old');assert.equal(await fs.access(stage).then(()=>true).catch(()=>false),false,'Staging folder was not removed');
  const updates=new service.UpdateService({directory:profile,currentVersion:version,platform:'darwin',arch:'arm64',installerOptions:{execPath:path.join(target,'Contents/MacOS/Guitar.io'),packaged:true}});await updates.load();
  assert.equal(JSON.parse(await fs.readFile(path.join(profile,'update-result.json'),'utf8')).activated,true);assert.equal(await fs.access(backup).then(()=>true).catch(()=>false),false);
  console.log('PASS native Apple Silicon updater: unsigned release extracts, locally signs/verifies, replaces the bundle, retains profile, preserves rollback until activation, and clears staging/old bundle. Restart/Gatekeeper UI requires MacBook testing.');

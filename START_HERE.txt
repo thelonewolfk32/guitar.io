@@ -1,4 +1,4 @@
-Guitar.io V1.4.42
+Guitar.io V1.4.43
 
 Windows: extract the full ZIP, then open Guitar.io.exe.
 Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app.

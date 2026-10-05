@@ -2,11 +2,11 @@
 
 A local guitar library and practice player for Windows and Apple Silicon Mac. Import Guitar Pro or Songsterr tabs, organise songs and guitars, track section progress, practise with MIDI or YouTube, and splice parts into a learning arrangement.
 
-**Current version: 1.4.42.**
+**Current version: 1.4.43.**
 
 - [Download Windows and Mac](https://github.com/thelonewolfk32/guitar.io/releases/latest)
 - [First-time GitHub and publishing guide](GITHUB_RELEASES.md)
-- [V1.4.42 changes](CHANGELOG-v1.4.42.md)
+- [V1.4.43 changes](CHANGELOG-v1.4.43.md)
 - [Local sync](SYNC.md)
 - [Mac preparation](MACOS_BUILD.md)
 

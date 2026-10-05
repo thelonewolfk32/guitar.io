@@ -11,6 +11,7 @@ $rootFiles += @('GITHUB_RELEASES.md','CHANGELOG-v1.4.3.md','VALIDATION-v1.4.3.md
 $rootFiles += @('.gitattributes','CHANGELOG-v1.4.4.md','VALIDATION-v1.4.4.md')
 $rootFiles += @('CHANGELOG-v1.4.41.md','VALIDATION-v1.4.41.md')
 $rootFiles += @('CHANGELOG-v1.4.42.md','VALIDATION-v1.4.42.md')
+$rootFiles += @('CHANGELOG-v1.4.43.md','VALIDATION-v1.4.43.md')
 $files = @($rootFiles | ForEach-Object { Get-Item -LiteralPath (Join-Path $projectRoot $_) -Force })
 foreach ($directory in $directories) { $files += Get-ChildItem -LiteralPath (Join-Path $projectRoot $directory) -Recurse -File -Force }
 # Create mode intentionally refuses to replace an earlier source archive.

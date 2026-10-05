@@ -49,7 +49,7 @@ Do not replace published ZIPs with different code under the same version. Ship a
 
 ## Publish future versions automatically
 
-`.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. A native Apple Silicon job checks local signing, bundle replacement and cleanup before tagged releases can publish; MacBook playback, relaunch and approval prompts still need a user-session test.
+`.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. Native Apple Silicon jobs on macOS 15 and 26 test bundled Electron staging, signing, replacement, invalid entitlements and cleanup before tagged publication. Interactive MacBook playback, relaunch and Gatekeeper still need a user-session test.
 
 For version 1.4.43:
 
@@ -101,7 +101,9 @@ Open Help (?) and click the version number. The menu contains Check for updates 
 
 Checks fetch small release metadata with ETags. Downloads require the exact platform ZIP, GitHub's SHA256 asset digest, matching package version/identity and safe archive paths. Keep both desktop assets uploaded before publishing. The workflow's release uploads supply the digest through GitHub's API automatically.
 
-A manual check downloads, verifies, installs and restarts if a newer version exists. Auto-updater downloads on launch and installs when the library is idle. Open players, editors, active saves and sync work defer installation. The same app-data profile remains in use. Windows replaces packaged files and rolls back partial failure; unrelated folder files are preserved. Mac attempts local signing of a staged bundle before swapping and reopening it, with Terminal/approval fallback. Native Mac updating needs a MacBook test.
+A manual check downloads, verifies, installs and restarts if a newer version exists. Auto-updater downloads on launch and installs when the library is idle. Open players, editors, active saves and sync work defer installation. The same app-data profile remains in use. Windows replaces packaged files and rolls back partial failure; unrelated folder files are preserved. Mac normalises signing entitlements, signs and verifies the new bundle before closing Guitar.io, then swaps and reopens it without Terminal. Failed preparation keeps the app open with a specific error and local `update-install.log`. Interactive Mac updating needs a MacBook test.
+
+An older V1.4.4/V1.4.41 Mac updater that fails with `AMFIUnserializeXML` needs one manual preparation/replacement of V1.4.42 to obtain the corrected installer. Do not remove the Application Support folder. Use increasing numeric versions: `1.4.5` is older than `1.4.41`; the next release after this repair should be `1.4.43` or `1.5.0`.
 
 V1.4.3 only has the earlier download checker. Install V1.4.4 manually once; subsequent versions can be installed from inside the app. Fully signed/notarized Mac distribution remains a later Apple Developer setup.
 

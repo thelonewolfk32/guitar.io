@@ -11,7 +11,8 @@ Help (?) > version number opens Updates.
 Check for updates downloads, verifies, installs and restarts when an update exists.
 Auto-updater OFF/ON controls launch downloads and installation while the library is idle.
 Close editors and return to the library before installing.
-Mac updates attempt local signing and offer an approval command if needed.
+Mac updates sign in the background. A preparation failure keeps the app open.
+If an older Mac updater fails, manually prepare/replace the app with V1.4.42 once.
 V1.4.3 users must install V1.4.4 once manually to obtain the new installer.
 The personal library remains in separate app data.
 Read GITHUB_RELEASES.md for publishing source and future versions.

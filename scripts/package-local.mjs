@@ -24,6 +24,7 @@ try{asar=require('@electron/asar');}catch{
 await fs.mkdir(stage, { recursive: true });
 await fs.mkdir(path.join(output, 'resources'), { recursive: true });
 for (const name of ['dist', 'electron']) await fs.cp(path.join(project, name), path.join(stage, name), { recursive: true });
+await fs.copyFile(path.join(project,'scripts/mac-entitlements.plist'),path.join(stage,'electron/mac-entitlements.plist'));
 await fs.writeFile(path.join(stage, 'package.json'), JSON.stringify({ name: config.name, version: config.version, main: config.main, type: config.type, private: true }, null, 2));
 await fs.copyFile(path.join(project, 'THIRD_PARTY_NOTICES.md'), path.join(stage, 'THIRD_PARTY_NOTICES.md'));
 await asar.createPackage(stage, path.join(output, 'resources/app.asar'));

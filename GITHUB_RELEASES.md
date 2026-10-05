@@ -7,7 +7,7 @@ Repository: https://github.com/thelonewolfk32/guitar.io
 | Place | Contents | Purpose |
 | --- | --- | --- |
 | `main` branch | Source, tests, scripts and README | Editable code and history |
-| Tag, e.g. `v1.4.3` | A label on one source commit | Identifies the shipped version |
+| Tag, e.g. `v1.4.4` | A label on one source commit | Identifies the shipped version |
 | GitHub Release | Windows ZIP, Mac ZIP, checksums and notes | App downloads for each computer |
 | Local app data | Personal songs, artwork, progress and pairing | Your separate private library |
 
@@ -33,45 +33,45 @@ Each computer downloads the app ZIP from Releases, so app updates do not require
 ## Upload an already-built version
 
 1. Open **Releases → Draft a new release**.
-2. Choose a new tag, e.g. `v1.4.3`, targeting the corresponding source commit on `main`.
-3. Title it `Guitar.io 1.4.3` and copy `CHANGELOG-v1.4.3.md` into the description.
+2. Choose a new tag, e.g. `v1.4.4`, targeting the corresponding source commit on `main`.
+3. Title it `Guitar.io 1.4.4` and copy `CHANGELOG-v1.4.4.md` into the description.
 4. Attach the matching Windows ZIP, Mac ZIP and SHA256SUMS file. Attach the Source ZIP too if its checksum is listed.
 5. Keep the release as a draft until both desktop packages finish uploading. Mark it as latest, leave **pre-release** unchecked, then publish.
 
 The checker expects these exact names, using the actual version:
 
 ```text
-Guitar-io-1.4.3-Windows-x64.zip
-Guitar-io-1.4.3-macOS-arm64.zip
+Guitar-io-1.4.4-Windows-x64.zip
+Guitar-io-1.4.4-macOS-arm64.zip
 ```
 
 Do not replace published ZIPs with different code under the same version. Ship a new version instead.
 
 ## Publish future versions automatically
 
-`.github/workflows/release.yml` runs tests and packages both desktops on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime; this packaging job does not provide native Mac playback testing.
+`.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. A native Apple Silicon job checks local signing, bundle replacement and cleanup before tagged releases can publish; MacBook playback, relaunch and approval prompts still need a user-session test.
 
-For version 1.4.4:
+For version 1.4.5:
 
 1. Pull `main`, make changes, then run in the source folder:
 
    ```sh
-   npm version 1.4.4 --no-git-tag-version
+   npm version 1.4.5 --no-git-tag-version
    npm test
    npm run build
    ```
 
-2. Add `CHANGELOG-v1.4.4.md` and `VALIDATION-v1.4.4.md`. Record changes and actual test results; the packages include these documents.
+2. Add `CHANGELOG-v1.4.5.md` and `VALIDATION-v1.4.5.md`. Record changes and actual test results; the packages include these documents.
 3. Commit the source, version/lock files and documents to `main`, then push.
 4. After checking the `main` workflow is green, create and push the tag:
 
    ```sh
-   git tag v1.4.4
-   git push origin v1.4.4
+   git tag v1.4.5
+   git push origin v1.4.5
    ```
 
 5. The tag workflow checks that the version matches `package.json`, builds both ZIPs, uploads them to a draft release, and publishes the complete release after successful checks.
-6. Test it on both computers. Launch checks will offer that version on the next launch, or use **App updates → Check now**.
+6. Test it on both computers. Launch checks will offer that version on the next launch, or use **Help (?) → version number → Check for updates**.
 
 Let the workflow create the release for this route. Do not manually create a release with the same tag while it is building. If a run fails, open its red step's log. Never force-push `main` or move a published version tag.
 
@@ -88,19 +88,21 @@ node node_modules/electron/install.js
 node scripts/package-local.mjs
 ./scripts/archive-windows.ps1
 node scripts/fetch-mac-runtime.mjs
-python scripts/package-mac.py --asar "$env:GUITARIO_OUTPUT_DIR/Guitar-io-1.4.3-Windows-x64/resources/app.asar"
+python scripts/package-mac.py --asar "$env:GUITARIO_OUTPUT_DIR/Guitar-io-1.4.4-Windows-x64/resources/app.asar"
 ```
 
-Substitute the current version for 1.4.3. These scripts refuse to overwrite release ZIPs.
+Substitute the current version for 1.4.4. These scripts refuse to overwrite release ZIPs.
 
 Electron 44 downloads its native runtime when it first runs. The explicit installer step makes that runtime available before these packaging scripts copy it.
 
-## How the checker works
+## How the updater works
 
-The app checks GitHub's newest stable published release, compares numeric versions, and selects the exact Windows x64 or Mac ARM64 ZIP. A routine check fetches small release metadata and uses ETags to reuse unchanged responses. It does not upload library data or automatically download packages. No GitHub login token is bundled into the app. Offline errors leave Guitar.io usable.
+Open Help (?) and click the version number. The menu contains Check for updates and Auto-updater OFF/ON. The release repository is configured in source, with no repository controls or external links in the menu.
 
-Use the top-right download icon to change the repository, disable launch checks, or check now. Drafts and pre-releases are ignored. Missing platform packages and private repositories show an explanatory message.
+Checks fetch small release metadata with ETags. Downloads require the exact platform ZIP, GitHub's SHA256 asset digest, matching package version/identity and safe archive paths. Keep both desktop assets uploaded before publishing. The workflow's release uploads supply the digest through GitHub's API automatically.
 
-Installation currently means downloading and replacing the app. Fully automatic Mac installation needs properly signed releases; add Apple Developer signing and notarization when membership is available. Use the included preparation command for current Mac test packages. Windows is currently a portable ZIP.
+A manual check downloads, verifies, installs and restarts if a newer version exists. Auto-updater downloads on launch and installs when the library is idle. Open players, editors, active saves and sync work defer installation. The same app-data profile remains in use. Windows replaces packaged files and rolls back partial failure; unrelated folder files are preserved. Mac attempts local signing of a staged bundle before swapping and reopening it, with Terminal/approval fallback. Native Mac updating needs a MacBook test.
 
-Official references: [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository), [Releases API](https://docs.github.com/en/rest/releases/releases), [Electron updates/signing](https://www.electronjs.org/docs/latest/api/auto-updater).
+V1.4.3 only has the earlier download checker. Install V1.4.4 manually once; subsequent versions can be installed from inside the app. Fully signed/notarized Mac distribution remains a later Apple Developer setup.
+
+Official references: [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository), [Releases API](https://docs.github.com/en/rest/releases/releases), [Electron lifecycle](https://www.electronjs.org/docs/latest/api/app).

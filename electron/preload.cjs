@@ -1,6 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('guitarUpdates',{
-  status:()=>ipcRenderer.invoke('updates:status'),check:()=>ipcRenderer.invoke('updates:check'),settings:value=>ipcRenderer.invoke('updates:settings',value),open:target=>ipcRenderer.invoke('updates:open',target)
+  status:()=>ipcRenderer.invoke('updates:status'),check:()=>ipcRenderer.invoke('updates:check'),settings:value=>ipcRenderer.invoke('updates:settings',value),prepare:()=>ipcRenderer.invoke('updates:prepare-download'),install:()=>ipcRenderer.invoke('updates:install'),
+  onChange:callback=>{const listener=(_event,state)=>callback(state);ipcRenderer.on('updates:changed',listener);return()=>ipcRenderer.removeListener('updates:changed',listener);},
+  onPrepare:callback=>{const listener=async(_event,token)=>{try{await callback();ipcRenderer.send('updates:prepared',token);}catch(error){ipcRenderer.send('updates:prepared',token,error.message || String(error));}};ipcRenderer.on('updates:prepare',listener);return()=>ipcRenderer.removeListener('updates:prepare',listener);}
 });
 contextBridge.exposeInMainWorld('guitarIO', {
   lookupSongTempo: song => ipcRenderer.invoke('recording:tempo',song),

@@ -32,5 +32,6 @@
 .sync-event-log li{display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:12px;margin-bottom:5px;background:#ffffff04;overflow-wrap:anywhere}
 .sync-event-log small{color:#b6c7a1;font-size:11px}.sync-event-log span{font-size:13px;line-height:1.5}
 .app-updates{display:flex;flex-direction:column;gap:18px}.app-updates p{margin:0}.app-updates .sync-debug-actions{margin:0}
+.help-version{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}.help-version:hover{color:var(--accent)}.help-version:focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:5px}
 .app-update-notice{position:fixed;right:24px;bottom:24px;z-index:60;display:flex;align-items:center;gap:8px;padding:8px;border-radius:20px;background:linear-gradient(120deg,#2e412e,#1b2521);box-shadow:0 10px 32px #0006}
 .sync-debug-toggle{display:flex;align-items:center;gap:10px;margin-top:20px;color:#b3c59e;font-size:13px}.sync-debug-toggle .magnet-switch{margin-left:auto}

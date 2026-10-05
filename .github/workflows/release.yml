@@ -24,6 +24,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Check Mac updater command
+        shell: bash
+        run: bash -n electron/update-mac.command
       - name: Download Windows Electron runtime
         run: node node_modules/electron/install.js
       - name: Validate release tag
@@ -37,6 +40,7 @@ jobs:
       - run: |
           $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
           python scripts/package-mac.py --asar "$env:GUITARIO_OUTPUT_DIR/Guitar-io-$version-Windows-x64/resources/app.asar"
+      - run: ./scripts/export-source.ps1
       - name: Write checksums
         run: |
           $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
@@ -48,9 +52,26 @@ jobs:
             release/artifacts/*.zip
             release/artifacts/*SHA256SUMS.txt
           retention-days: 14
+  mac-updater:
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: Guitar-io-desktop-builds
+          path: release-assets
+      - name: Test native Mac update and local signing
+        run: |
+          version=$(node -p "require('./package.json').version")
+          node tests/mac-updater-smoke.mjs "release-assets/Guitar-io-$version-macOS-arm64.zip"
   release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs: [build, mac-updater]
     runs-on: ubuntu-latest
     permissions:
       contents: write

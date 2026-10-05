@@ -13,6 +13,8 @@ let missingContent:((kind:'source'|'asset',id:string)=>Promise<void>)|undefined;
 export function setMissingContentLoader(loader:typeof missingContent){missingContent=loader;}
 const removedAssets = new WeakMap<IDBTransaction, Set<string>>();
 export const storageMetrics = { indexReads: 0, detailReads: 0, sourceReads: 0, assetReads: 0, songWrites: 0, sourceWrites: 0, indexWrites: 0 };
+/** Wait behind existing writes without reading or rewriting library records. */
+export async function flushStorage(){const d=await db(),tx=d.transaction(storageStores,'readwrite');await complete(tx);}
 export function resetStorageMetrics() { for (const key of Object.keys(storageMetrics) as (keyof typeof storageMetrics)[]) storageMetrics[key] = 0; }
 function remember(id: string, bytes: Uint8Array) {
   sources.delete(id); sources.set(id, bytes);

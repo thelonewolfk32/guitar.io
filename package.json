@@ -1,6 +1,6 @@
 {
   "name": "guitar-io",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "private": true,
   "description": "A local-first guitar library and section-based practice workspace.",
   "author": "Guitar.io",
@@ -42,7 +42,8 @@
     "test:splicer-desktop": "node --import tsx tests/splicer-ui.mjs --desktop",
     "ios:sync": "npm run build && cap sync ios",
     "ios:open": "cap open ios",
-    "test:v14-desktop": "node --import tsx tests/v14-desktop.mjs"
+    "test:v14-desktop": "node --import tsx tests/v14-desktop.mjs",
+    "test:updater-desktop": "node tests/v144-updater-desktop.mjs"
   },
   "dependencies": {
     "@capacitor/core": "8.5.2",

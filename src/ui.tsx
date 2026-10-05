@@ -6,7 +6,7 @@ import { STATUS } from './types';
 import { learnedPercent } from './library-model';
 import { acquireAssetUrl } from './artwork-cache';
 
-export function Modal({ title, subtitle, onClose, children, wide = false, appearance }: { title: string; subtitle?: string; onClose: () => void; children: ReactNode; wide?: boolean; appearance?: 'story' }) {
+export function Modal({ title, subtitle, onClose, children, wide = false, appearance }: { title: string; subtitle?: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean; appearance?: 'story' }) {
   const ref = useRef<HTMLDivElement>(null), close = useRef(onClose); close.current = onClose;
   useEffect(() => {
     const previous = document.activeElement as HTMLElement;

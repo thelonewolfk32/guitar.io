@@ -1,4 +1,12 @@
-# Current release: Guitar.io V1.4.3
+# Current release: Guitar.io V1.4.4
+
+User authorised a one-click updater and GitHub release. The only updater entrance is Help (?) → version number. UI is Check for updates, Auto-updater OFF/ON, and actionable status; no repository field, GitHub links or permanent help text. V1.4.3 users must install V1.4.4 manually once to obtain the installer. Old versions and published assets remain immutable.
+
+electron/update-installer.cjs downloads bounded OS/architecture ZIPs, verifies GitHub SHA256/size, checks archive paths/links and application identity/version, stages, then requires idle-library renderer preparation and an IndexedDB commit barrier. Automatic download is allowed in the background; replacement is blocked during a player/editor/save/import/sync. Windows uses a hidden shell-launched PowerShell helper (launch-update-windows.ps1): direct detached PowerShell did not execute, and a direct child did not survive Electron shutdown. Tested actual replacement/restart. Replace only packaged files, preserve unrelated app-folder files, roll back partial failure. Mac signs a prepared sibling bundle locally, verifies it, waits for exit, replaces the app, and retains rollback until activation. No Apple Developer identity/notarization; approval may still be needed. Installer files are copied from ASAR before exit and paths remain bounded. Raw original-fs is required to read/clean ASAR files under Electron. Renderer flush does not read/resave library contents.
+
+Local tests: all 133 regression tests, typecheck, production build, packaged one-click updater acceptance with a synthetic newer version and an isolated three-song library. Native ARM64 signing/replacement smoke runs in mac-updater CI and gates tagged publication. MacBook GUI/Gatekeeper testing remains. No iOS build. Publishing guide in GITHUB_RELEASES.md. Never log credentials; keep test profiles separate and delete only bounded temporary test folders.
+
+# Previous release: Guitar.io V1.4.3
 
 Windows and Apple Silicon Mac only. Repository thelonewolfk32/guitar.io is authorised to become public, including source; publishing is part of this task. README and GITHUB_RELEASES.md describe source on main, binary ZIPs in Releases, and tagged CI releases. Old V1.4.2 notes below describe the previous release.
 

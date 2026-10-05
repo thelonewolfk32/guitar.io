@@ -1,4 +1,4 @@
-const { app, BrowserWindow, protocol, net, session, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, protocol, net, session, ipcMain, shell, dialog } = require('electron');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 
@@ -29,12 +29,19 @@ app.whenReady().then(() => {
     if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== event.sender.mainFrame || !event.senderFrame.url.startsWith('guitario://app/')) throw new Error('Only Guitar.io can request an import.');
   }
   const {UpdateService}=require('./update-service.cjs');
-  const updates=new UpdateService({directory:app.getPath('userData'),currentVersion:app.getVersion(),fetcher:(url,options)=>net.fetch(url,options),openExternal:url=>shell.openExternal(url)});
+  let updatePreparation;
+  ipcMain.on('updates:prepared',(event,token,error)=>{try{requireApp(event);if(updatePreparation?.token!==token)return;clearTimeout(updatePreparation.timer);const pending=updatePreparation;updatePreparation=undefined;error?pending.reject(new Error(error)):pending.resolve();}catch{}});
+  const updates=new UpdateService({directory:app.getPath('userData'),currentVersion:app.getVersion(),fetcher:(url,options)=>net.fetch(url,options),openExternal:url=>shell.openExternal(url),onChange:state=>{if(mainWindow&&!mainWindow.isDestroyed())mainWindow.webContents.send('updates:changed',state);},installerOptions:{execPath:process.execPath,packaged:app.isPackaged,
+    beforeInstall:async()=>{if(learnWindow&&!learnWindow.isDestroyed())throw Error('Close Learn before updating.');await new Promise((resolve,reject)=>{const token=require('node:crypto').randomUUID(),timer=setTimeout(()=>{updatePreparation=undefined;reject(new Error('Save your changes and try updating again.'));},15000);updatePreparation={token,timer,resolve,reject};mainWindow.webContents.send('updates:prepare',token);});session.defaultSession.flushStorageData();},
+    quit:()=>app.quit(),
+    attention:async(command,message)=>{const choice=await dialog.showMessageBox(mainWindow,{type:'info',title:'Guitar.io update',message:'Mac update needs approval',detail:message+'\nIf macOS blocks the command, open System Settings → Privacy & Security → Open Anyway, then run it again.',buttons:['Run command','Later'],defaultId:0,cancelId:1});if(choice.response===0){const {execFile}=require('node:child_process');await require('node:util').promisify(execFile)('/usr/bin/open',['-a','Terminal',command]);app.quit();}}
+  }});
   const updatesReady=updates.load();
   ipcMain.handle('updates:status',async event=>{requireApp(event);await updatesReady;return updates.status();});
   ipcMain.handle('updates:check',async event=>{requireApp(event);await updatesReady;return updates.check();});
   ipcMain.handle('updates:settings',async(event,value)=>{requireApp(event);await updatesReady;return updates.settings(value);});
-  ipcMain.handle('updates:open',async(event,target)=>{requireApp(event);if(!['download','release','repository'].includes(target))throw new Error('Invalid update action.');await updatesReady;return updates.open(target);});
+  ipcMain.handle('updates:prepare-download',async event=>{requireApp(event);await updatesReady;return updates.prepare();});
+  ipcMain.handle('updates:install',async event=>{requireApp(event);await updatesReady;return updates.install();});
   const {LanService}=require('./lan-bundle.cjs');
   const pendingLan=new Map();let lanSequence=0;
   lan=new LanService((payload,deviceId)=>new Promise((resolve,reject)=>{if(!mainWindow||mainWindow.isDestroyed())return reject(new Error('Open Guitar.io to sync.'));const id=++lanSequence,timer=setTimeout(()=>{pendingLan.delete(id);reject(new Error('Library did not respond.'));},20000);pendingLan.set(id,{resolve,reject,timer});mainWindow.webContents.send('lan:incoming',id,payload,deviceId);}));

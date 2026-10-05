@@ -1,6 +1,6 @@
 # Guitar.io V1.5.0
 
-Active source: development/guitar-io. Stable local installation: Guitar.io.exe directly in the main workspace; preserve development/, resources/ and locales/. Generated Windows/Mac/Source ZIPs and checksums: release/artifacts in source. Runtime: pinned Electron 44.4.5 dependency; no old-version baselines required. Old packages/reference source/cache and old release notes removed from current workspace; history remains in Git and immutable GitHub Releases. Preserve real profile C:/Users/nkend/AppData/Roaming/Guitar.io.
+Published baseline: tag `v1.5.0`, commit `d891480`, https://github.com/thelonewolfk32/guitar.io/releases/tag/v1.5.0. Active source in the original Windows workspace is `development/guitar-io`; a GitHub clone has `package.json` at its root. Stable local Windows installation: Guitar.io.exe directly in the main workspace; preserve development/, resources/ and locales/. Generated Windows/Mac/Source ZIPs and checksums: release/artifacts in source. Runtime: pinned Electron 44.4.5 dependency; no old-version baselines required. Old packages/reference source/cache and old release notes removed from current workspace; history remains in Git and immutable GitHub Releases. Preserve real profile C:/Users/nkend/AppData/Roaming/Guitar.io and the existing Mac Application Support/Guitar.io profile.
 
 Windows hidden Start-Process restart caused an invisible lock-holding app, so older EXEs also could not appear. Restart now uses Normal; second-instance and ready-to-show explicitly show the window. Update success requires renderer/library activation and a native window, with 90-second startup deadline and rollback. Startup failures pause automatic reinstallation. Metadata load alone does not mark activated. Mac retains rollback until renderer activation, with existing canonical local signing.
 
@@ -8,4 +8,14 @@ Update availability reads SyncEngine.view.busy live; stale cached React boolean 
 
 Full-version ZIPs support skipped releases. Native packaged Windows tests cover actual V1.4.4 installer -> V1.5.0, manual/force flow and failed-startup rollback with visible windows and preserved isolated library. npm test (serial), typecheck and production build. test:updater-desktop runs tests/v150-updater-desktop.mjs; workflow gates publication on that Windows test plus macOS 15/26 signing smoke. MacBook interactive Gatekeeper/playback testing is separate. Apple Silicon / Sequoia 15; no Developer membership. No iOS build in this release.
 
-Public GitHub repository thelonewolfk32/guitar.io is authorised for source/release publication. Commit main, push tag v1.5.0 using existing workflow after checks. Credentials stay in memory. Do not overwrite published ZIPs/tags or expose profile files.
+Public GitHub repository thelonewolfk32/guitar.io is authorised for source/release publication. V1.5.0 is already published: do not recreate its tag or overwrite its ZIPs. Future functional releases use a new increasing version and the existing workflow after checks. Credentials and profile files stay outside Git/public artifacts.
+
+## Mac/iPhone continuation from V1.5
+
+Read [IOS_HANDOFF.md](IOS_HANDOFF.md) for a tool-independent setup, Xcode MCP commands, GitHub authentication, native test checklist and a copyable starting prompt. [AGENTS.md](AGENTS.md) supplies persistent project context to coding tools that support it. GitHub source updates, desktop ZIP updates and private-library LAN sync are separate paths.
+
+The existing Capacitor 8.5.2 project is `ios/App/App.xcodeproj`, scheme App, iOS 16.0+ with custom GuitarLocalPlugin/GuitarViewController. Native metadata is now 1.5.0/build 150. Generated web assets are not tracked; run `npm ci` and `npm run ios:sync` on the Mac before Xcode builds, and refresh after web edits. No Swift/native build or new desktop package was produced for this handover. An old project ZIP would load stale assets.
+
+Use the same shared React/TypeScript app and LAN protocol with V1.5 desktops. Keep IndexedDB guitar-io-v1/schema 4, current origins, device identities, per-peer pull/push checkpoints, atomic apply, missing-base repair, recent activity and lazy bytes. iOS is a desktop client with foreground/resume sync, not a continuously running host. Actual phone playback, file import/export, YouTube, native transport and touch layout remain pending Mac/iPhone checks.
+
+User has Apple Silicon, last reported Sequoia 15, and no paid Developer membership. Verify macOS/iPhone versions before choosing compatible Xcode 26.3+ for its MCP bridge. Use Personal Team for a seven-day personal test install; TestFlight later requires membership. Keep the desktop updater out of native iOS. Continue functional iOS work on a branch while leaving the shipped V1.5 desktop release intact.

@@ -9,6 +9,7 @@ A local guitar library and practice player for Windows and Apple Silicon Mac. Im
 - [V1.5.0 changes](CHANGELOG-v1.5.0.md)
 - [Local sync](SYNC.md)
 - [Mac preparation](MACOS_BUILD.md)
+- [V1.5 Mac/iPhone and AI coding handover](IOS_HANDOFF.md)
 
 Windows: extract the ZIP and open `Guitar.io.exe` inside its folder.
 
@@ -21,3 +22,9 @@ Local workspace layout: open `Guitar.io.exe` directly in the main project folder
 Enable Device sync on both computers and pair with the six-digit code. Wi-Fi and Ethernet can share a LAN. Your songs, artwork and progress stay in private app data and sync separately from application updates.
 
 Build from source with Node.js 24: run npm ci, npm test and npm run build in development/guitar-io. The GitHub workflow packages Windows and Mac; a matching version tag publishes the release after checks. See GITHUB_RELEASES.md for the publishing steps and THIRD_PARTY_NOTICES.md for licenses. No iOS build is included.
+
+## Continue on a Mac or develop the iPhone version
+
+Clone this repository on the Mac and open its root in your coding tool; a GitHub clone already contains `package.json` at the top level. Read [IOS_HANDOFF.md](IOS_HANDOFF.md) for Xcode/Codex/Claude/Cursor connections, GitHub authentication, current-source refresh, free Personal Team installation and Windows/Mac/iPhone sync checks. [AGENTS.md](AGENTS.md) gives coding tools the project context automatically where supported.
+
+The iOS project exists but still needs native compilation and device testing. From the clone root, use `npm ci`, `npm run ios:sync` and `npm run ios:open` on the Mac before running it in Xcode. GitHub carries source and desktop app updates; your personal library arrives through LAN sync. The published V1.5.0 desktop release remains the baseline.

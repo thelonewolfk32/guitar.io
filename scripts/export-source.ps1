@@ -6,7 +6,7 @@ $config = Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw 
 $outputRoot = if ($env:GUITARIO_OUTPUT_DIR) { [System.IO.Path]::GetFullPath($env:GUITARIO_OUTPUT_DIR) } else { [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'release/artifacts')) }
 $archivePath = Join-Path $outputRoot "Guitar-io-$($config.version)-Source.zip"
 $directories = @('.github', 'dist', 'electron', 'public', 'scripts', 'src', 'tests', 'shared', 'ios')
-$rootFiles = @('.gitignore', '.gitattributes', 'Build-Windows.cmd', "CHANGELOG-v$($config.version).md", "VALIDATION-v$($config.version).md", 'PERFORMANCE.md', 'PERFORMANCE.json', 'SYNC.md', 'IOS_HANDOFF.md', 'MACOS_BUILD.md', 'CODEX_CURRENT_HANDOFF.md', 'capacitor.config.ts', 'index.html', 'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'README.md', 'START_HERE.txt', 'THIRD_PARTY_NOTICES.md', 'tsconfig.json', 'vite.config.ts', 'GITHUB_RELEASES.md')
+$rootFiles = @('.gitignore', '.gitattributes', 'AGENTS.md', 'Build-Windows.cmd', "CHANGELOG-v$($config.version).md", "VALIDATION-v$($config.version).md", 'PERFORMANCE.md', 'PERFORMANCE.json', 'SYNC.md', 'IOS_HANDOFF.md', 'MACOS_BUILD.md', 'CODEX_CURRENT_HANDOFF.md', 'capacitor.config.ts', 'index.html', 'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'README.md', 'START_HERE.txt', 'THIRD_PARTY_NOTICES.md', 'tsconfig.json', 'vite.config.ts', 'GITHUB_RELEASES.md')
 $files = @($rootFiles | ForEach-Object { Get-Item -LiteralPath (Join-Path $projectRoot $_) -Force })
 foreach ($directory in $directories) { $files += Get-ChildItem -LiteralPath (Join-Path $projectRoot $directory) -Recurse -File -Force }
 # Create mode intentionally refuses to replace an earlier source archive.

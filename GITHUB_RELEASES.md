@@ -2,6 +2,8 @@
 
 Repository: https://github.com/thelonewolfk32/guitar.io
 
+V1.5.0 is already published. Keep its tag and assets unchanged; the version/tag examples below illustrate the process and must not be used to publish a second V1.5.0. See [IOS_HANDOFF.md](IOS_HANDOFF.md) for continuing from that baseline on the Mac, connecting a coding tool to Xcode/GitHub and installing an iPhone test through Xcode. Native iOS is not part of the desktop ZIP updater or current release workflow.
+
 ## What goes where
 
 | Place | Contents | Purpose |

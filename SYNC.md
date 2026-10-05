@@ -1,4 +1,6 @@
-# Guitar.io V1.4.1 local device sync
+# Guitar.io V1.5.0 local device sync
+
+V1.5 retains the existing LAN protocol/schema, including the metadata repair and recent-activity sync described below. Windows/Mac are released; native iPhone compilation and device verification are pending. See [IOS_HANDOFF.md](IOS_HANDOFF.md) for the current Mac/iPhone setup. GitHub source/app updates and private-library LAN sync are separate connections.
 
 Enable Device sync from the header. Choose Add device on the other device and enter the six-digit PC/Mac code. Compare the verification digits and confirm on both screens. Paired apps reconnect through Bonjour on the same Wi-Fi/Ethernet LAN, with saved private IPv4 addresses as fallback. Devices must be awake with Guitar.io open. iOS syncs foregrounded and catches up on resume. Allow Local Network access on Apple devices and local firewall connections on desktops. Client-isolated Wi-Fi can block peers.
 
@@ -14,7 +16,7 @@ The diagnostic journal compacts after 2,000 revisions while current state/tombst
 
 AES-256-GCM messages use fresh nonces, protocol AAD and request/response identity binding over private IPv4 HTTP. The host rejects public peers, redirected targets, replayed/expired requests and oversized bodies. Keep automatic system date/time enabled (requests expire after two minutes). Bonjour advertises ID/name and the six-digit discovery code, never a key. The six digits identify a host and are not an encryption password. A one-time P-256 ECDH exchange with committed public keys/nonces and HKDF-SHA256 derives an independent 256-bit session key; matching verification digits on both devices and explicit host approval authenticate the exchange before sharing the persistent AES key. Requests expire after two minutes and init attempts are capped at five per minute. The legacy long-code path remains for existing V1.4 clients. Reset a host code to revoke old incoming keys; clients must re-pair. Removing a peer stops outgoing connections and records a local rejection for that device identity. Re-pairing with host approval clears the rejection.
 
-No cloud account or router forwarding is needed. iOS is a bidirectional client of desktops; direct phone-to-phone hosting and IPv6-only LANs are outside V1.4. Transport-independent field clocks/deltas/content references provide the basis for a later cloud adapter. See IOS_HANDOFF.md for native build/testing and platform limitations.
+No cloud account or router forwarding is needed. iOS is a bidirectional client of desktops; direct phone-to-phone hosting and IPv6-only LANs are not implemented. Transport-independent field clocks/deltas/content references provide the basis for a later cloud adapter. See IOS_HANDOFF.md for native build/testing and platform limitations.
 
 Auto sync off disables automatic outgoing checks, including save/foreground timers. Sync now still performs a manual check; paired peers may still send incoming updates while Local sync is ON. OFF closes the listener/discovery and stops connections. Pairing desktop peers is reciprocal; iOS clients are listed on hosts but are not polled as servers. No library/storage migration or full-library rewrite is introduced in V1.4.1.
 # V1.4.3 metadata repair and diagnostics

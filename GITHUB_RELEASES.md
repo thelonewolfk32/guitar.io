@@ -84,6 +84,7 @@ $env:GUITARIO_OUTPUT_DIR = Join-Path (Get-Location) 'release/artifacts'
 npm ci
 npm test
 npm run build
+node node_modules/electron/install.js
 node scripts/package-local.mjs
 ./scripts/archive-windows.ps1
 node scripts/fetch-mac-runtime.mjs
@@ -91,6 +92,8 @@ python scripts/package-mac.py --asar "$env:GUITARIO_OUTPUT_DIR/Guitar-io-1.4.3-W
 ```
 
 Substitute the current version for 1.4.3. These scripts refuse to overwrite release ZIPs.
+
+Electron 44 downloads its native runtime when it first runs. The explicit installer step makes that runtime available before these packaging scripts copy it.
 
 ## How the checker works
 

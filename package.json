@@ -1,0 +1,132 @@
+{
+  "name": "guitar-io",
+  "version": "1.4.3",
+  "private": true,
+  "description": "A local-first guitar library and section-based practice workspace.",
+  "author": "Guitar.io",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "assets": "node scripts/prepare-assets.mjs",
+    "dev": "npm run assets && vite --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run assets && npm run typecheck && node scripts/build-lan.mjs && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "desktop": "npm run build && electron .",
+    "dist:win": "npm run build && electron-builder --win nsis --x64",
+    "dist:portable": "npm run build && electron-builder --win zip --x64",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.mjs",
+    "test:ui": "node tests/v1-ui.mjs",
+    "test:v3-ui": "node tests/v3-ui.mjs",
+    "test:desktop": "node tests/v1-ui.mjs --desktop",
+    "test:artwork-live": "node tests/v1-artwork-live.mjs",
+    "test:player-ui": "node tests/v101-ui.mjs",
+    "test:player-desktop": "node tests/v101-ui.mjs --desktop",
+    "test:v11-ui": "node tests/v11-ui.mjs",
+    "test:v11-desktop": "node tests/v11-ui.mjs --desktop",
+    "test:v12-ui": "node tests/v12-ui.mjs",
+    "test:stress": "node tests/library-stress.mjs",
+    "test:v122-ui": "node tests/v122-ui.mjs",
+    "test:v122-desktop": "node tests/v122-ui.mjs --desktop",
+    "test:v123-ui": "node tests/v123-ui.mjs",
+    "test:v123-desktop": "node tests/v123-ui.mjs --desktop",
+    "test:v124-ui": "node tests/v124-ui.mjs",
+    "test:v124-desktop": "node tests/v124-ui.mjs --desktop",
+    "test:v13-ui": "node tests/v13-ui.mjs",
+    "test:v13-desktop": "node tests/v13-ui.mjs --desktop",
+    "test:v142-ui": "node --import tsx tests/v142-ui.mjs",
+    "test:v142-desktop": "node --import tsx tests/v142-ui.mjs --desktop",
+    "test:youtube-live-rate": "node tests/youtube-live-rate.mjs",
+    "test:splicer-ui": "node --import tsx tests/splicer-ui.mjs",
+    "test:splicer-desktop": "node --import tsx tests/splicer-ui.mjs --desktop",
+    "ios:sync": "npm run build && cap sync ios",
+    "ios:open": "cap open ios",
+    "test:v14-desktop": "node --import tsx tests/v14-desktop.mjs"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.5.2",
+    "@capacitor/ios": "8.5.2",
+    "@coderline/alphatab": "1.8.4",
+    "bonjour-service": "1.4.4",
+    "lucide-react": "^0.577.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.25.12",
+    "fake-indexeddb": "^6.2.5",
+    "happy-dom": "^20.14.5",
+    "playwright": "^1.56.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.0"
+  },
+  "build": {
+    "appId": "io.guitario.desktop",
+    "productName": "Guitar.io",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "asar": true,
+    "extraFiles": [
+      "START_HERE.txt",
+      "README.md",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Guitar-io-${version}-Windows-${arch}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false,
+      "createDesktopShortcut": true
+    },
+    "mac": {
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "Guitar.io syncs library changes with your paired devices on the same Wi-Fi or Ethernet network.",
+        "NSBonjourServices": [
+          "_guitario._tcp"
+        ]
+      },
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.music",
+      "hardenedRuntime": true,
+      "entitlements": "scripts/mac-entitlements.plist",
+      "entitlementsInherit": "scripts/mac-entitlements.plist",
+      "artifactName": "Guitar-io-${version}-macOS-${arch}.${ext}"
+    }
+  }
+}

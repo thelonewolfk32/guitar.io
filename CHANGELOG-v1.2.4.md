@@ -1,0 +1,8 @@
+# Guitar.io v1.2.4
+
+- Section playback-speed multipliers now apply only to MIDI. Full-song and backing recordings keep the main whole-song playback speed while crossing sections, seeking or looping. Switching from slowed MIDI to a recording starts at the main speed, and native YouTube rate changes update that main speed directly. Returning to MIDI restores the active section multiplier. GP tempo maps still describe the score's musical timing; they do not change the recording's playback rate.
+- The section editor labels this setting MIDI section speed and explains its scope. The multiplier beside the transport speed appears only for MIDI.
+- Restyled the inline Song tempo editor using the player's green palette, rounded number fields, readable labels and gauge icon. Add, save, restore and export use consistent icon controls with accessible names, tooltips and keyboard focus. Changes remain editable inline, preserve imported tempo changes, and support save, undo, restore and GP export.
+- Added an Apple Silicon arm64 Mac development package for macOS 13+. It uses the same tested app.asar as Windows, the checksum-verified official Electron runtime, rebranded app/helpers and preserved Unix modes/framework symlinks. The included command prepares/ad-hoc signs the app locally on the Mac. This Windows host verified archive structure and contents; native Mac launch/playback remains to be checked on the MacBook. See MACOS_BUILD.md.
+
+Retains v1.2.3's corrected audio output rate, isolated MIDI state, ten-recents preview cache, optional recording BPM lookup, incremental saves and existing profile/database/backup formats. Original tabs and older releases stay unchanged. No GitHub changes or publication.

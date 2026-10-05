@@ -1,0 +1,61 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import 'fake-indexeddb/auto';
+import * as alphaTab from '@coderline/alphatab';
+import {insertSection} from '../src/section-editing.ts';
+import {barSeconds,shiftSync,playbackBpm,supportedRate} from '../src/playback-timing.ts';
+import {youtubeSyncPoints} from '../src/recording-sync.ts';
+import {pairingIdentity,pairingCommit,pairingSession,shortCode} from '../shared/lan-pairing.mjs';
+import {newSecret,seal,open,parsePairing} from '../shared/lan-crypto.mjs';
+import {SyncEngine} from '../src/lan-sync.ts';
+import {syncSetting} from '../src/sync-storage.ts';
+globalThis.window={alphaTab,guitarLan:{status:async()=>({endpoints:['http://127.0.0.1:3210/sync']})}};
+test('inserting a solo splits a verse, preserves progress/setup, and can be undone with the original snapshot',()=>{
+  const original=[{id:'verse',name:'Verse',start:1,end:16,status:'learning',learnedPercent:42,speed:.75,notes:'Keep this',color:'#fff',instructionalTimestamps:{video:12}}];
+  const solo={id:'solo',name:'Solo',start:7,end:10,status:'new',color:'#000',notes:''};
+  const result=insertSection(original,solo);
+  assert.deepEqual(result.map(s=>[s.name,s.start,s.end]),[['Verse 1',1,6],['Solo',7,10],['Verse 2',11,16]]);
+  assert.equal(result[0].id,'verse');assert.notEqual(result[2].id,'verse');
+  for(const s of [result[0],result[2]]){assert.equal(s.learnedPercent,42);assert.equal(s.speed,.75);assert.equal(s.notes,'Keep this');assert.deepEqual(s.instructionalTimestamps,{video:12});}
+  assert.deepEqual(original.map(s=>[s.name,s.start,s.end]),[['Verse',1,16]]);
+  assert.deepEqual(insertSection(result,{...solo,start:1,end:16}),[{...solo,start:1,end:16}]);
+});
+test('bar offsets use tempo and meter and shift every anchor including negative offsets',()=>{
+  const score=alphaTab.importer.ScoreLoader.loadAlphaTex('\\tempo 120 \\ts 7 8 . 0.6.1 | 0.6.1 | 0.6.1');
+  assert.equal(barSeconds(score),1.75);assert.equal(barSeconds(score,100),2.1);
+  const sync={enabled:true,source:'manual',videoId:'dQw4w9WgXcQ',points:[{bar:1,seconds:3.5},{bar:2,seconds:5.25},{bar:3,seconds:7}]};
+  const negative=shiftSync(sync,-7);assert.deepEqual(negative.points.map(p=>p.seconds),[-3.5,-1.75,0]);
+  assert.deepEqual(shiftSync(negative,7),sync);
+  assert.equal(playbackBpm(score,2,negative),120);
+  assert(youtubeSyncPoints(score,negative).length>=3);
+  assert.equal(score.tempo,120);assert(score.masterBars.every(b=>!b.syncPoints?.length));
+});
+test('BPM conversion uses measured video timing and snaps whole/section rates to actual supported values',()=>{
+  const score=alphaTab.importer.ScoreLoader.loadAlphaTex('\\tempo 120 . 0.6.1 | 0.6.1 | 0.6.1');
+  const sync={enabled:true,points:[{bar:1,seconds:4},{bar:2,seconds:6.4},{bar:3,seconds:8.8}]};
+  assert(Math.abs(playbackBpm(score,2,sync)-100)<1e-9);
+  assert.equal(supportedRate(.6,[.25,.5,.75,1]),.5);
+  assert.equal(supportedRate(.75*.5,[.5,1]),.5);
+  assert.equal(supportedRate(.75*.5),.375);
+});
+test('short-code pairing requires commitments, matching verification digits, host approval and one-time encrypted exchange',async()=>{
+  const engine=new SyncEngine(()=>true,()=>{});engine.config={enabled:true,id:'host',name:'PC',secret:newSecret(),pairingCode:shortCode()};engine.view.enabled=true;
+  const client=await pairingIdentity(),nonce=newSecret(),requestId=crypto.randomUUID();
+  assert.match(engine.config.pairingCode,/^\d{6}$/);
+  const answer=await engine.serve({op:'pair:init',code:engine.config.pairingCode,name:'Mac',requestId,commit:await pairingCommit(client.publicKey,nonce,requestId)},'pairing');
+  assert.equal(answer.publicKey,undefined);assert.equal(engine.view.incoming,undefined);
+  await assert.rejects(()=>engine.serve({op:'pair:reveal',requestId,publicKey:client.publicKey,nonce:newSecret()},'pairing'),/commitment/);
+  const reveal=await engine.serve({op:'pair:reveal',requestId,publicKey:client.publicKey,nonce},'pairing');
+  assert.equal(await pairingCommit(reveal.publicKey,reveal.nonce,requestId),answer.commit);
+  const session=await pairingSession(client,reveal.publicKey,requestId,true);
+  assert.equal(session.digits,engine.view.incoming.digits);
+  const body=await seal(session.secret,{op:'confirm',requestId,peer:{id:'mac',name:'Mac',secret:newSecret(),endpoints:['http://127.0.0.1:3211/sync']}});
+  assert.deepEqual(await engine.serve({op:'pair:finish',requestId,body},'pairing'),{approved:false});
+  engine.approvePair(true);
+  const result=await engine.serve({op:'pair:finish',requestId,body},'pairing');assert.equal(result.approved,true);
+  const payload=await open(session.secret,result.body);assert.equal(parsePairing(payload.code).secret,engine.config.secret);assert.equal(engine.view.peers[0].id,'mac');
+  await assert.rejects(()=>engine.serve({op:'pair:finish',requestId,body},'pairing'),/expired/);
+  await engine.remove('mac');await assert.rejects(()=>engine.serve({op:'head'},'mac'),/removed/);
+  await engine.setAutoSync(false);assert.equal((await syncSetting('config')).autoSync,false);assert.equal(engine.view.autoSync,false);engine.call=()=>assert.fail('Automatic sync must not contact peers when disabled');await engine.run(true);
+  engine.stop();
+});

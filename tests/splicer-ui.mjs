@@ -1,0 +1,33 @@
+import {chromium,_electron as electron} from 'playwright';
+import fs from 'node:fs';import path from 'node:path';import assert from 'node:assert/strict';
+import * as a from '@coderline/alphatab';
+import {serve,seed,instrument,capturePlayer,fixtures} from './library-harness.mjs';
+import {songsterrFixture} from './songsterr-fixture.mjs';
+import {songsterrScore} from '../src/songsterr-score.ts';
+import {makeSong} from '../src/notation.ts';
+globalThis.window={alphaTab:a};
+const f=songsterrFixture();f.tracks[1]={...f.tracks[0],name:'Solo guitar',tuning:[62,57,53,48,43,38],measures:Array.from({length:4},()=>({voices:[{beats:[{type:1,notes:[{string:0,fret:7}]}]}]}))};
+const source=new a.exporter.Gp7Exporter().export(songsterrScore(f)),song={...await makeSong(source,'fixture.gp'),source:Array.from(source),artworkAssetId:'cover-0'};
+const separate=songsterrFixture();separate.meta.title='Separate solo';separate.tracks=f.tracks;separate.tracks[0].automations={tempo:[{measure:0,bpm:200,type:4}]};const separateBytes=new a.exporter.Gp7Exporter().export(songsterrScore(separate));
+const desktop=process.argv.includes('--desktop'),dev=process.argv.includes('--dev'),version=JSON.parse(fs.readFileSync('package.json')).version;
+fs.mkdirSync('test-results',{recursive:true});const profile=desktop?fs.mkdtempSync(path.resolve('test-results/splicer-desktop-')):undefined,server=dev?{url:'http://127.0.0.1:5176',close:async()=>{}}:await serve('dist');
+const browser=desktop?await electron.launch({executablePath:path.resolve('../../Guitar-io-'+version+'-Windows-x64/Guitar.io.exe'),env:{...process.env,GUITARIO_TEST_PROFILE:profile}}):await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',headless:true});
+const context=desktop?browser.context():await browser.newContext({viewport:{width:1512,height:960}}),page=desktop?await browser.firstWindow():await context.newPage(),url=desktop?'guitario://app/':server.url,button=name=>page.getByRole('button',{name,exact:true}),errors=[];
+page.on('pageerror',e=>errors.push(e.message));
+try {
+  await instrument(page);await page.goto(url);await page.getByText('Start by adding your first guitar',{exact:true}).waitFor();await seed(page,url,[song],true);await page.goto(url);await capturePlayer(page);await button('Open Sync Study').click();await button('Select bar 4').waitFor();await page.waitForFunction(()=>window.__testApi.isReadyForPlayback);
+  const sourceWrites=await page.evaluate(()=>window.__io['songSources.put']);await button('Player settings').click();await button('Splicer').click();await page.getByRole('dialog',{name:'Splicer'}).waitFor();
+  await page.getByLabel('Splicer right part').selectOption('1');await page.waitForFunction(()=>document.querySelectorAll('.splicer-score .at-surface svg').length>=2);
+  assert.equal(await page.locator('.splicer-scroll').count(),1);assert.equal(await page.locator('.splicer .play-button').count(),0);
+  await page.getByLabel('Splicer jump to section').selectOption(song.sections.find(s=>s.name==='Intro').id);assert.equal(await page.getByLabel('Splice end bar').inputValue(),'2');
+  await button('Merge notes').click();await button('Splice into left part').click();await page.getByRole('button',{name:'Save splice',exact:true}).waitFor();await page.waitForFunction(()=>document.querySelectorAll('.splice-bar-notation svg').length===4);assert.match(await page.getByRole('dialog').innerText(),/bars highlighted/);assert(await page.locator('.splicer-score').innerHTML().then(s=>/210,\s*40,\s*48|#d22830|D22830/.test(s)));
+  await page.screenshot({path:'test-results/v13-splicer-preview.png'});await button('Save splice').click();await page.waitForFunction(()=>window.__testApi.score.tracks[0].staves[0].bars[0].voices.length===2);
+  assert.equal(await page.evaluate(()=>window.__io['songSources.put']),sourceWrites,'Splice saves do not rewrite original tab bytes');
+  await button('Splicer').click();await button('Undo merge').click();await page.waitForFunction(()=>window.__testApi.score.tracks[0].staves[0].bars[0].voices.length===1);await button('Close dialog').click();
+  await button('Splicer').click();await page.getByLabel('Splicer separate tab file').setInputFiles({name:'Separate-solo.gp',mimeType:'application/octet-stream',buffer:Buffer.from(separateBytes)});await page.getByText('Separate-solo.gp',{exact:true}).waitFor();await page.getByLabel('Splicer right part').selectOption('1');
+  await page.getByLabel('Splicer jump to section').selectOption(song.sections.find(s=>s.name==='Solo').id);await page.getByLabel('Splicer imported start bar').fill('1');
+  await button('Splice into left part').click();await button('Save splice').click();await page.waitForFunction(()=>window.__testApi.score.tracks[0].staves[0].bars[2].voices[0].beats[0].notes[0].realValue===69);
+  assert.equal(await page.evaluate(()=>window.__testApi.score.tempo),137);assert.equal(await page.evaluate(()=>window.__testApi.score.title),'Sync Study');assert.deepEqual(await page.evaluate(()=>window.__testApi.score.tracks[0].staves[0].tuning),[64,59,55,50,45,40]);
+  await button('Return to library').click();await button('Open Sync Study').click();await button('Select bar 4').waitFor();await page.waitForFunction(()=>window.__testApi.score.tracks[0].staves[0].bars[2].voices[0].beats[0].notes[0].realValue===69);
+  assert.deepEqual(errors,[]);console.log('PASS Splicer '+(desktop?'Windows':'browser')+': readonly shared-scroll comparison, sections, merge preview/red warnings, range-only saves, Undo merge, separate GP and destination metadata/tuning, save/reopen.');
+}finally{if(!desktop)await context.close();await browser.close();await server.close();if(profile){assert(profile.startsWith(path.resolve('test-results')+path.sep));fs.rmSync(profile,{recursive:true,force:true});}}

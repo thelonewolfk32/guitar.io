@@ -1,0 +1,72 @@
+/* Restrained surfaces, with controls revealed on pointer or keyboard interaction. */
+.button,.icon-button,.text-button,.collection-camera,.tuning-families button{transition:background .18s ease,box-shadow .18s ease,transform .18s ease,border-color .18s ease,color .18s ease}
+.button.primary{background:linear-gradient(180deg,#dceeb9 0%,#bad590 100%);border:1px solid #d8eab3;box-shadow:inset 0 1px 0 #f1ffdd70,0 2px 5px #080d102b;color:#26351f}
+.button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px #0003}
+.button:active:not(:disabled){transform:translateY(0)}
+.collection-controls>.button{background:transparent;border-color:#46514d;color:#a8b6ae}
+.collection-controls>.button:hover,.collection-controls>.button[aria-expanded=true]{background:#29322e;border-color:#74836c;color:#dfebd8}
+.song-card{border:1px solid #e2eede15;box-shadow:0 4px 16px #0001;transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+.song-card:hover,.song-card:focus-within{transform:translateY(-3px);border-color:rgb(var(--art-tint)/.5);box-shadow:0 10px 32px rgb(var(--art-tint)/.18),0 4px 12px #0003}
+.song-card.dragging-song{opacity:.45;transform:scale(.99)}
+.card-art{cursor:grab}.card-art:active{cursor:grabbing}
+.card-art img,.collection-cover img{user-select:none;-webkit-user-drag:none}
+.card-body{background:linear-gradient(155deg,#ffffff03,transparent 65%)}
+.card-title h2{color:#e6ece5;font-weight:600;letter-spacing:-.25px}
+.card-tuning,.card-progress-label,.card-footer>span{color:#8d9c93}
+.card-tags>span{color:#98a59c;background:#26312b}
+.card-actions{opacity:0;transition:opacity .16s ease}
+.song-card:hover .card-actions,.song-card:focus-within .card-actions{opacity:1}
+.add-song-card,.add-song-card:hover{background:transparent;border:1px dashed #63755b75;box-shadow:none;min-height:240px;gap:0}
+.add-song-card>span{height:38px;width:38px;border:0;border-radius:0;margin-bottom:20px;color:#aec59a}
+.add-song-card>strong{font-size:15px;color:#b3c2a8}.add-song-card>p{color:#839084;margin-top:10px}
+.add-song-card:hover{border-color:#b6ce94;background:#b6ce9405}
+.collection-utilities{position:absolute;top:10px;right:10px;display:flex;gap:7px;z-index:2}
+.collection-utilities .guitar-profile-edit,.collection-utilities .collection-camera{position:static;inset:auto;width:34px;height:34px;border-radius:9px;background:#142019e6;border:1px solid #a4b79c40;color:#d1ddcb;display:grid;place-items:center;margin:0}
+.collection-utilities .collection-camera:hover,.collection-utilities .guitar-profile-edit:hover{background:#304132;transform:translateY(-1px)}
+.folder-row,.folder-row-wrap{transition:background .16s,border-color .16s,box-shadow .16s}
+.drop-target{background:#405b374d!important;box-shadow:inset 0 0 0 2px #b7d18e;border-radius:7px}
+.folder-palette,.guitar-choices{border:0;padding:0;margin:0 0 20px}
+.folder-palette legend,.guitar-choices legend{font-size:12px;color:#bac6bd;margin-bottom:12px}
+.folder-palette{display:flex;flex-wrap:wrap;gap:12px}
+.folder-palette button{width:29px;height:29px;display:grid;place-items:center;border:2px solid transparent;border-radius:50%;color:#14221b}
+.folder-palette button[aria-pressed=true]{outline:2px solid #dfebd7;outline-offset:3px}
+.guitar-choices{display:flex;flex-wrap:wrap;gap:8px}
+.modal .guitar-choices label{flex-direction:row;align-items:center;gap:8px;margin:0;padding:9px 12px;border:1px solid #46534b;border-radius:6px;font-size:12px;background:#19221d}
+.modal .guitar-choices input[type=checkbox]{width:15px;height:15px;padding:0;margin:0;accent-color:#bcd898}
+.guitar-choices p{color:#9aa99f;font-size:12px}
+.tuning-families{display:flex;gap:7px;flex-wrap:wrap;margin:15px 0}
+.tuning-families button{background:transparent;color:#aabbac;border:1px solid #50614e;border-radius:6px;padding:9px 12px;font-size:11px;letter-spacing:.7px}
+.tuning-families button[aria-expanded=true],.tuning-families button:hover{background:#35442e;color:#d8e8bf;border-color:#9aac83}
+.tuning-category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:20px;max-width:1100px}
+.tuning-category-card{display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:25px;min-height:160px;border-radius:10px;border:1px solid #8eaa7b33;background:linear-gradient(130deg,#2a342c,#1e2823);color:#bdcdb5;text-align:left;transition:transform .2s,box-shadow .2s}
+.tuning-category-card strong{letter-spacing:1.5px;font-size:14px;font-weight:500}.tuning-category-card span{color:#8d9f8f;font-size:12px}
+.tuning-category-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px #0003}
+.workspace{padding:24px 30px 28px}.workspace-columns{gap:24px}
+.practice-nav .back-button,.collection-back{border-radius:999px;border:1px solid #84967c40;background:transparent;padding:9px 15px;font-size:12px;min-height:36px}
+.practice-nav{margin-bottom:8px}.song-heading{margin-bottom:22px}
+.integrated-player.media-panel{background:linear-gradient(145deg,#252e29,#1e2725);border:1px solid #d5e3cc24;border-radius:12px;box-shadow:0 10px 30px #080e0a38,0 1px 0 #e4f3d808 inset;margin-bottom:20px}
+.integrated-player .recording-tabs{border-bottom-color:#c0d0b91c;padding:6px 10px 0}
+.integrated-player .transport{padding:12px 14px}
+.play-button{width:36px;height:36px;background:#bada9120;color:#d1e7b5;border:0;border-radius:10px;box-shadow:0 0 14px #bdde8c0d;transition:transform .18s,box-shadow .18s,background .18s}
+.play-button:hover:not(:disabled),.play-button:focus-visible{background:#bada9130;transform:scale(1.05);box-shadow:0 0 17px #bdde8c20}
+.play-button[aria-label=Pause]{color:#e4f6c7;background:#bada9130}.play-button svg{width:18px;height:18px}
+.transport .scrubber{-webkit-appearance:none;appearance:none;height:20px!important;cursor:pointer;accent-color:#cce5ad}
+.transport .scrubber::-webkit-slider-runnable-track{height:2px;border-radius:2px;background:#95a78c60}
+.transport .scrubber::-webkit-slider-thumb{-webkit-appearance:none;width:9px;height:9px;border-radius:50%;margin-top:-3.5px;background:#d8edbb;opacity:0;transition:opacity .15s;box-shadow:0 0 8px #badb8540}
+.transport:hover .scrubber::-webkit-slider-thumb,.transport:focus-within .scrubber::-webkit-slider-thumb{opacity:1}
+.workspace .score-paper{border:1px solid #ececdd35;border-radius:9px}
+.bar-overlay{background:transparent;border-top:3px solid color-mix(in srgb,var(--bar-color) 85%,transparent);border-radius:3px}
+.bar-overlay:hover{background:#456d6606;border-color:transparent;border-top-color:var(--bar-color)}
+.bar-overlay.selected{background:#4c76a009;outline:1px solid #4c76a070;outline-offset:-1px;border:1px solid transparent;border-top:3px solid var(--bar-color);box-shadow:none}
+.bar-overlay.playing-bar{border-left:2px solid #73965b;background:#7c9d6107}
+.sections-heading{margin-bottom:18px}.section-group{margin-bottom:10px}
+.section-card{border-radius:8px;border-left-width:3px;background:#202824;transition:opacity .2s,box-shadow .2s,border-color .2s,background .2s}
+.section-card.upcoming{opacity:.68}.section-card.upcoming:hover,.section-card:focus-within{opacity:1}
+.section-card.active{background:color-mix(in srgb,var(--section-color) 8%,#202824);border-color:color-mix(in srgb,var(--section-color) 70%,#3b493c);box-shadow:0 3px 15px color-mix(in srgb,var(--section-color) 14%,transparent)}
+.section-select strong{font-size:13px;font-weight:550;color:#e0e8de}.section-select>div>span,.section-number{font-size:10px;color:#8e9c94}
+.section-edit,.section-progress-button{opacity:0;transition:opacity .15s}
+.section-card:hover .section-edit,.section-card:focus-within .section-edit,.section-card:hover .section-progress-button,.section-card:focus-within .section-progress-button,.section-edit[aria-expanded=true]{opacity:1}
+.note-hit{touch-action:none}.score-sheet{user-select:none}.note-marquee{position:absolute;z-index:8;pointer-events:none;border:1px solid #416d9b;background:#518dcc20;border-radius:2px}
+@media(hover:none){.card-actions,.section-edit,.section-progress-button{opacity:1}.transport .scrubber::-webkit-slider-thumb{opacity:1}}
+@media(max-width:900px){.workspace{padding:18px 16px}.workspace-columns{gap:18px}.collection-utilities{gap:6px}.tuning-category-grid{gap:12px}.integrated-player .transport{padding:10px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}.song-card:hover,.song-card:focus-within,.button:hover,.tuning-category-card:hover,.play-button:hover{transform:none!important}}

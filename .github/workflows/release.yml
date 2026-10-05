@@ -1,0 +1,67 @@
+name: Check and package Guitar.io
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      GUITARIO_OUTPUT_DIR: ${{ github.workspace }}/release/artifacts
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Validate release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
+      - run: node scripts/package-local.mjs
+      - run: ./scripts/archive-windows.ps1
+      - run: node scripts/fetch-mac-runtime.mjs
+      - run: |
+          $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
+          python scripts/package-mac.py --asar "$env:GUITARIO_OUTPUT_DIR/Guitar-io-$version-Windows-x64/resources/app.asar"
+      - name: Write checksums
+        run: |
+          $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
+          Get-ChildItem -LiteralPath $env:GUITARIO_OUTPUT_DIR -Filter '*.zip' | Sort-Object Name | ForEach-Object { "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" } | Set-Content -Encoding utf8 "$env:GUITARIO_OUTPUT_DIR/Guitar-io-$version-SHA256SUMS.txt"
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: Guitar-io-desktop-builds
+          path: |
+            release/artifacts/*.zip
+            release/artifacts/*SHA256SUMS.txt
+          retention-days: 14
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          name: Guitar-io-desktop-builds
+          path: release-assets
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          gh release create "$tag" release-assets/* --verify-tag --title "Guitar.io ${tag#v}" --notes-file "CHANGELOG-${tag}.md" --draft
+          gh release edit "$tag" --draft=false --latest

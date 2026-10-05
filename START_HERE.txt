@@ -1,0 +1,16 @@
+Guitar.io V1.4.3
+
+Windows: extract the full ZIP, then open Guitar.io.exe.
+Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app.
+
+Update BOTH paired computers, then use Device sync > Sync now.
+Missing metadata repair resumes the existing checkpoint without resetting the library.
+Device sync > Show diagnostics (OFF by default) shows failures and exports a report.
+
+The top-right download icon opens App updates. Launch checks use:
+https://github.com/thelonewolfk32/guitar.io/releases/latest
+
+Download updates on each computer, close Guitar.io, then replace the app files.
+The personal library remains in separate app data.
+Read GITHUB_RELEASES.md for publishing source and future versions.
+No iOS build is included.

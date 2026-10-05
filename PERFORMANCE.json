@@ -1,0 +1,274 @@
+{
+  "testedAt": "2026-10-03T07:07:04.430Z",
+  "environment": "Windows x64 / installed Edge / isolated browser storage / headless WebAudio",
+  "fixture": "115-bar original GP scores; 24 sections; four tags; unique 512px textured JPEG covers; five recent playback entries",
+  "thresholds": {
+    "startupMs": 1500,
+    "eventGapP95Ms": 150,
+    "frameP95Ms": 50,
+    "timelineErrorMs": 600
+  },
+  "rows": [
+    {
+      "version": "1.1.1",
+      "count": 25,
+      "sourceBytes": 827516,
+      "artworkBytes": 3004006,
+      "firstLaunchMs": 798.5884000000005,
+      "startupMedianMs": 717.5632000000005,
+      "startupSamplesMs": [
+        718.9285,
+        621.4797999999992,
+        717.5632000000005
+      ],
+      "playerReadyMs": 670.4456999999984,
+      "midi": {
+        "positionEvents": 2215,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 28.5,
+        "frameP95Ms": 6.2000000000000455,
+        "frameMaxMs": 17.799999999999955,
+        "scoreAdvanceMs": 5906.666666666779,
+        "elapsedEventMs": 6002,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 95.33333333322116,
+      "jsHeapBytes": 22971136,
+      "startupIO": {
+        "songs.getAll": 1,
+        "settings.get": 3,
+        "assets.get": 25
+      },
+      "thresholdExceeded": false
+    },
+    {
+      "version": "1.1.1",
+      "count": 50,
+      "sourceBytes": 1655022,
+      "artworkBytes": 6013475,
+      "firstLaunchMs": 1347.7667000000001,
+      "startupMedianMs": 1099.0208999999995,
+      "startupSamplesMs": [
+        1099.0208999999995,
+        1118.1888,
+        1089.9516999999978
+      ],
+      "playerReadyMs": 672.4404000000068,
+      "midi": {
+        "positionEvents": 2219,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 26.69999998807907,
+        "frameP95Ms": 6.200000000000273,
+        "frameMaxMs": 21.699999999999818,
+        "scoreAdvanceMs": 5917.333333333447,
+        "elapsedEventMs": 6004.5,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 87.16666666655328,
+      "jsHeapBytes": 19910616,
+      "startupIO": {
+        "songs.getAll": 1,
+        "settings.get": 3,
+        "assets.get": 50
+      },
+      "thresholdExceeded": false
+    },
+    {
+      "version": "1.1.1",
+      "count": 100,
+      "sourceBytes": 3310043,
+      "artworkBytes": 12030482,
+      "firstLaunchMs": 2254.214399999997,
+      "startupMedianMs": 2261.1077000000005,
+      "startupSamplesMs": [
+        2300.8573000000033,
+        2061.923499999997,
+        2261.1077000000005
+      ],
+      "playerReadyMs": 829.3897999999972,
+      "midi": {
+        "positionEvents": 2223,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 29.700000047683716,
+        "frameP95Ms": 6.200000000000273,
+        "frameMaxMs": 28.899999999999636,
+        "scoreAdvanceMs": 5928.000000000115,
+        "elapsedEventMs": 6003.099999964237,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 75.09999996412262,
+      "jsHeapBytes": 32783708,
+      "startupIO": {
+        "songs.getAll": 1,
+        "settings.get": 3,
+        "assets.get": 100
+      },
+      "thresholdExceeded": true
+    },
+    {
+      "version": "1.2.0",
+      "count": 25,
+      "sourceBytes": 827516,
+      "artworkBytes": 3004006,
+      "firstLaunchMs": 809.9036000000051,
+      "startupMedianMs": 136.89389999999548,
+      "startupSamplesMs": [
+        136.89389999999548,
+        127.87259999998787,
+        154.18339999999444
+      ],
+      "playerReadyMs": 542.4671999999991,
+      "midi": {
+        "positionEvents": 2226,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 19.80000001192093,
+        "frameP95Ms": 6.2000000000000455,
+        "frameMaxMs": 12.100000000000136,
+        "scoreAdvanceMs": 5936.0000000001155,
+        "elapsedEventMs": 5995.699999988079,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 59.699999987963565,
+      "jsHeapBytes": 65933632,
+      "startupIO": {
+        "songIndex.getAll": 1,
+        "settings.get": 3,
+        "artworkThumbs.get": 6,
+        "assets.get": 5
+      },
+      "thresholdExceeded": false
+    },
+    {
+      "version": "1.2.0",
+      "count": 50,
+      "sourceBytes": 1655022,
+      "artworkBytes": 6013475,
+      "firstLaunchMs": 1462.2232000000076,
+      "startupMedianMs": 171.98480000000563,
+      "startupSamplesMs": [
+        208.278999999995,
+        171.98480000000563,
+        170.04360000000452
+      ],
+      "playerReadyMs": 523.4309999999969,
+      "midi": {
+        "positionEvents": 2227,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 16.30000001192093,
+        "frameP95Ms": 6.199999999999818,
+        "frameMaxMs": 12.300000000000182,
+        "scoreAdvanceMs": 5938.6666666667825,
+        "elapsedEventMs": 6011.800000011921,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 73.13333334513845,
+      "jsHeapBytes": 28055044,
+      "startupIO": {
+        "songIndex.getAll": 1,
+        "settings.get": 3,
+        "artworkThumbs.get": 6,
+        "assets.get": 6
+      },
+      "thresholdExceeded": false
+    },
+    {
+      "version": "1.2.0",
+      "count": 100,
+      "sourceBytes": 3310043,
+      "artworkBytes": 12030482,
+      "firstLaunchMs": 2651.3399000000063,
+      "startupMedianMs": 202.29899999999907,
+      "startupSamplesMs": [
+        202.29899999999907,
+        219.0520000000106,
+        157.00290000000678
+      ],
+      "playerReadyMs": 584.9348999999929,
+      "midi": {
+        "positionEvents": 2234,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 25.69999998807907,
+        "frameP95Ms": 6.199999999999932,
+        "frameMaxMs": 12.600000000000023,
+        "scoreAdvanceMs": 5957.333333333451,
+        "elapsedEventMs": 6011.100000023842,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 53.76666669039059,
+      "jsHeapBytes": 36973444,
+      "startupIO": {
+        "songIndex.getAll": 1,
+        "settings.get": 3,
+        "artworkThumbs.get": 5,
+        "assets.get": 1
+      },
+      "thresholdExceeded": false
+    },
+    {
+      "version": "1.2.0",
+      "count": 200,
+      "sourceBytes": 6620058,
+      "artworkBytes": 24087835,
+      "firstLaunchMs": 2600.9990000000107,
+      "startupMedianMs": 131.75969999999506,
+      "startupSamplesMs": [
+        131.75969999999506,
+        89.34500000000116,
+        141.75749999997788
+      ],
+      "playerReadyMs": 420.72359999999753,
+      "midi": {
+        "positionEvents": 2237,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 13.200000047683716,
+        "frameP95Ms": 6.2000000000000455,
+        "frameMaxMs": 6.400000000000546,
+        "scoreAdvanceMs": 5965.333333333452,
+        "elapsedEventMs": 6011.299999952316,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 45.96666661886411,
+      "jsHeapBytes": 41112616,
+      "startupIO": {
+        "songIndex.getAll": 1,
+        "settings.get": 3,
+        "artworkThumbs.get": 6,
+        "assets.get": 5
+      },
+      "thresholdExceeded": false
+    },
+    {
+      "version": "1.2.0",
+      "count": 300,
+      "sourceBytes": 9930073,
+      "artworkBytes": 36154099,
+      "firstLaunchMs": 3496.3234999999986,
+      "startupMedianMs": 142.52210000000196,
+      "startupSamplesMs": [
+        142.52210000000196,
+        153.60070000000997,
+        112.95110000000568
+      ],
+      "playerReadyMs": 522.095799999981,
+      "midi": {
+        "positionEvents": 2234,
+        "eventGapP95Ms": 12,
+        "eventGapMaxMs": 15.599999964237213,
+        "frameP95Ms": 6.199999999999818,
+        "frameMaxMs": 6.300000000000182,
+        "scoreAdvanceMs": 5957.333333333451,
+        "elapsedEventMs": 6005.600000023842,
+        "playbackSpeed": 1
+      },
+      "timelineErrorMs": 48.26666669039059,
+      "jsHeapBytes": 18510404,
+      "startupIO": {
+        "songIndex.getAll": 1,
+        "settings.get": 3,
+        "artworkThumbs.get": 5
+      },
+      "thresholdExceeded": false
+    }
+  ],
+  "limitations": "Synthetic scores and simulated output timing; no subjective listening, cloud latency, iOS or LAN transfer. A 300-song cap is not a universal maximum."
+}

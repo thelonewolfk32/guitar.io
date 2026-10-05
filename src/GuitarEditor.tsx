@@ -1,0 +1,29 @@
+import { useState, useEffect } from 'react';
+import { Check, Plus, X, Camera } from 'lucide-react';
+import type { GuitarProfile, Asset } from './types';
+import { Modal, useAssetUrl } from './ui';
+import { baseTuning, tuningName } from './tunings';
+import TuningPicker from './TuningPicker';
+
+export const newGuitar = (name = ''): GuitarProfile => ({ id: crypto.randomUUID(), name, make: '', model: '', material: '', stringGauge: '', notes: '', kind: 'guitar', strings: 6, tunings: [] });
+export default function GuitarEditor({ guitar, addTuning=false, onSave, onClose }: { guitar: GuitarProfile; addTuning?:boolean; onSave: (g: GuitarProfile, assets?: Asset[]) => Promise<void>; onClose: () => void }) {
+  const [draft, setDraft] = useState(guitar), [pitches, setPitches] = useState(baseTuning(guitar.strings, guitar.kind === 'bass'));
+  const [adding, setAdding] = useState(addTuning), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const [artwork, setArtwork] = useState<Asset | null>(null), [preview, setPreview] = useState('');
+  const savedPhoto = useAssetUrl(guitar.artworkAssetId);
+  useEffect(() => { if (!artwork) return; const url = URL.createObjectURL(artwork.blob); setPreview(url); return () => URL.revokeObjectURL(url); }, [artwork]);
+  function configure(kind: GuitarProfile['kind'], strings: number) {
+    setDraft({ ...draft, kind, strings, stringGauges: draft.stringGauges ? Array.from({length:strings},(_,i)=>draft.stringGauges?.[i] || '') : undefined, tunings: strings === draft.strings ? draft.tunings : [] }); setPitches(baseTuning(strings, kind === 'bass'));
+  }
+  return <Modal title="Guitar details" onClose={() => { if (!busy) onClose(); }}><form onSubmit={async e => { e.preventDefault(); setBusy(true); setError(''); try { await onSave({ ...draft, name: draft.name.trim(), artworkAssetId: artwork?.id || draft.artworkAssetId }, artwork ? [artwork] : []); onClose(); } catch (e) { setError(e instanceof Error ? e.message : String(e)); } finally { setBusy(false); } }}>
+    <div className="guitar-photo-field">{(preview || savedPhoto) && <img src={preview || savedPhoto} alt="Guitar photo" draggable={false} />}<label><span><Camera size={18} />Guitar photo</span><input aria-label="Guitar photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={e => { const file = e.target.files?.[0]; if (!file) return; if (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 8 * 1024 * 1024) { setError('Use a JPG, PNG or WebP smaller than 8 MB.'); return; } setArtwork({id:crypto.randomUUID(),kind:'artwork',name:file.name,mime:file.type,blob:file}); setError(''); }} /></label></div>
+    <label>Name<input aria-label="Guitar name" maxLength={100} required value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} /></label>
+    <div className="guitar-profile-fields"><label>Instrument<select aria-label="Guitar type" value={draft.kind} onChange={e=>configure(e.target.value as GuitarProfile['kind'],e.target.value==='bass'?4:6)}><option value="guitar">Guitar</option><option value="bass">Bass</option></select></label><label>Strings<select aria-label="Guitar strings" value={draft.strings} onChange={e=>configure(draft.kind,Number(e.target.value))}>{(draft.kind==='bass'?[4,5,6]:[6,7,8]).map(n=><option key={n} value={n}>{n} strings</option>)}</select></label></div>
+    <details className="guitar-extra-details"><summary>Setup & specifications</summary><div className="guitar-profile-fields">{([['make','Make'],['model','Model'],['material','Material / woods'],['stringBrand','String brand'],['stringModel','String model'],['pickups','Pickups'],['bridge','Bridge'],['scaleLength','Scale length']] as const).map(([key,label])=><label key={key}>{label}<input aria-label={label} maxLength={200} value={draft[key] || ''} onChange={e=>setDraft({...draft,[key]:e.target.value})}/></label>)}</div><fieldset className="string-gauges"><legend>String gauges · 1 is the highest string</legend>{Array.from({length:draft.strings},(_,i)=><label key={i}>String {i+1}<input aria-label={`String ${i+1} gauge`} maxLength={30} value={draft.stringGauges?.[i] || ''} onChange={e=>{const gauges=Array.from({length:draft.strings},(_,n)=>draft.stringGauges?.[n] || '');gauges[i]=e.target.value;setDraft({...draft,stringGauges:gauges,stringGauge:gauges.join(' / ')});}}/></label>)}</fieldset>{draft.stringGauge && !draft.stringGauges && <small>Previous gauge notes: {draft.stringGauge}</small>}<label>Other details<textarea aria-label="Guitar notes" maxLength={4000} rows={2} value={draft.notes} onChange={e=>setDraft({...draft,notes:e.target.value})}/></label></details>
+    <div className="guitar-tunings"><h3>Available tunings</h3><div className="guitar-tuning-list">{draft.tunings.map((t, i) => <div key={i}><span>{t.name}</span><button type="button" className="icon-button" aria-label={`Remove ${t.name} tuning`} onClick={() => setDraft({ ...draft, tunings: draft.tunings.filter((_, index) => i !== index) })}><X size={13} /></button></div>)}</div>
+      {adding ? <><TuningPicker pitches={pitches} onChange={setPitches} bass={draft.kind === 'bass'} /><button type="button" className="button secondary" onClick={() => { if (!draft.tunings.some(t => t.pitches.join() === pitches.join())) setDraft({ ...draft, tunings: [...draft.tunings, { name: tuningName([...pitches].reverse(), draft.kind === 'bass'), pitches: [...pitches] }] }); setAdding(false); }}><Plus size={15} />Add tuning</button></> : <button type="button" className="button secondary" onClick={() => setAdding(true)}><Plus size={15} />Add tuning</button>}
+    </div>
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <div className="modal-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>Cancel</button><button className="button primary" disabled={busy || adding}><Check size={15} />Save guitar</button></div>
+  </form></Modal>;
+}

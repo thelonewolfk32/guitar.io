@@ -11,7 +11,7 @@ import {findOnlineTempo} from './online-tempo';
 import YouTubeSyncEditor from './YouTubeSyncEditor';
 import {youtubeSyncPoints} from './recording-sync';
 import {readWorkingScore} from './score-editing';
-import {barSeconds,shiftSync,playbackBpm} from './playback-timing';
+import {barSeconds,shiftSync,playbackBpm,steppedRate} from './playback-timing';
 
 import InstructionalControls from './InstructionalControls';
 import type { InstructionalSeek } from './instructional';
@@ -56,8 +56,9 @@ export default function MediaPanel(p: Props) {
       if(disposed || latest.current.source==='instructional' || !Number.isFinite(rate) || rate<.25 || rate>2)return;
       actualRate=rate;
       if(expectedRate.current!==null && Math.abs(expectedRate.current-rate)<.000001){expectedRate.current=null;return;}
-      latest.current.onRate(rate);
-      if(latest.current.api && latest.current.api.playbackSpeed!==rate)latest.current.api.playbackSpeed=rate;
+      const chosen=steppedRate(rate,nativeFine?undefined:player?.getAvailablePlaybackRates?.(),.25);
+      latest.current.onRate(chosen);
+      if(latest.current.api && latest.current.api.playbackSpeed!==chosen)latest.current.api.playbackSpeed=chosen;
     };
     const nativeMessage=(event:MessageEvent)=>{
       const frame=player?.getIframe?.();

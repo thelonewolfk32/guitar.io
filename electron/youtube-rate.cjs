@@ -9,6 +9,7 @@ function youtubeFrame(contents, videoId) {
 }
 function rateScript(videoId, rate, request=0) {
   if (typeof videoId !== 'string' || !/^[\w-]{11}$/.test(videoId) || !Number.isFinite(rate) || rate < .25 || rate > 2 || !Number.isSafeInteger(request) || request<0) throw new Error('Choose a speed between 25% and 200%.');
+  rate=Math.round(rate*20+1e-9)/20;
   return `(() => {
     const video = document.querySelector('video');
     if (!video) return null;

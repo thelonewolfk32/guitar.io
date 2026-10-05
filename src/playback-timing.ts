@@ -7,6 +7,11 @@ export function supportedRate(value:number, rates?:number[]):number {
   const valid=rates?.filter(r=>Number.isFinite(r)&&r>0);
   return valid?.length ? valid.reduce((best,r)=>Math.abs(r-value)<Math.abs(best-value)?r:best,valid[0]) : Math.max(.1,Math.min(2,value));
 }
+// Quantise the playback multiplier, leaving GP tempos and recording anchors exact.
+export function steppedRate(value:number,rates?:number[],minimum=.1,maximum=2):number {
+  const clamped=Math.max(minimum,Math.min(maximum,Number.isFinite(value)?value:1));
+  return supportedRate(Math.round(clamped*20+1e-9)/20,rates);
+}
 export function barSeconds(score:model.Score, recordingBpm?:number):number {
   const bar=score.masterBars[0];
   const bpm=recordingBpm || bar?.tempoAutomations.at(-1)?.value || score.tempo;

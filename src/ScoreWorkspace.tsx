@@ -19,7 +19,7 @@ import NotationTools from './NotationTools';
 import { readWorkingScore } from './score-editing';
 import Splicer from './Splicer';
 import SpeedControl from './SpeedControl';
-import {supportedRate} from './playback-timing';
+import {steppedRate} from './playback-timing';
 import {applyScoreColors} from './score-colors';
 
 type Props = { song: Song; onPlayed?: (bar: number) => void; onSave: (song: Song, assets?: Asset[]) => Promise<void>; onEdit: () => void; onBack: () => void; notify: (text: string, error?: boolean) => void };
@@ -82,7 +82,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
   playbackState.current = { ...playbackState.current, speed, sections, mediaSource, youtubeSectionSpeeds, rates, currentBar, onPlayed };
   function applyBarSpeed(bar: number) {
     const state = playbackState.current, factor = state.mediaSource === 'synth' || state.mediaSource==='youtube' && state.youtubeSectionSpeeds ? state.sections.find(s => s.start<=bar && s.end>=bar)?.speed ?? 1 : 1;
-    const target=supportedRate(state.mediaSource==='youtube'?Math.max(.25,state.speed*factor):state.speed*factor,state.mediaSource==='youtube'?state.rates:undefined);
+    const target=steppedRate(state.speed*factor,state.mediaSource==='youtube'?state.rates:undefined,state.mediaSource==='youtube'?.25:.1);
     if (api.current?.isReadyForPlayback && api.current.playbackSpeed!==target) api.current.playbackSpeed=target;
   }
   selectionRef.current = selection;
@@ -278,6 +278,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
     setSaving(true);
     try {
       const { isNew: _isNew, ...section } = draft;
+      section.speed=steppedRate(section.speed ?? 1,undefined,.25,1);
       section.name = section.name.trim();section.instructionalTimestamps=Object.keys(timestamps).length?timestamps:undefined;
       const updatedSections = insertSection(sections, section);
       await onSave(withSections(song, updatedSections));
@@ -330,7 +331,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
   const sectionEditor = draft ? <form className="section-editor" style={{'--section-color':draft.color} as CSSProperties} onSubmit={e => { e.preventDefault(); saveSection(); }}>
           <label>Section<SectionNameSelect value={draft.name} onChange={name=>setDraft({...draft,name})}/></label>
           <BarRange value={draft} total={song.bars} onChange={range=>setDraft({...draft,...range})}/>
-          <label className="section-speed">Section speed <output title="Section speed multiplier">{Math.round((draft.speed ?? 1)*100)}%</output><input aria-label="Section playback speed" type="range" min="25" max="100" step="1" value={(draft.speed ?? 1)*100} onChange={e=>setDraft({...draft,speed:mediaSource==='youtube'&&youtubeSectionSpeeds?supportedRate(Math.max(.25,speed*Number(e.target.value)/100),rates)/speed:Number(e.target.value)/100})}/></label>
+          <label className="section-speed">Section speed <output title="Section speed multiplier">{Math.round(steppedRate(draft.speed ?? 1,undefined,.25,1)*100)}%</output><input aria-label="Section playback speed" type="range" min="25" max="100" step="5" value={steppedRate(draft.speed ?? 1,undefined,.25,1)*100} onChange={e=>setDraft({...draft,speed:steppedRate(Number(e.target.value)/100,undefined,.25,1)})}/></label>
           {!draft.isNew && <div className="section-learning-control"><div className="section-control-label"><span>Learning</span><div><StatusMark section={draft}/>{draft.status!=='learning' && <output>{learnedPercent(draft)}%</output>}</div></div><input aria-label="Percentage learnt" type="range" min="0" max="100" step="1" value={learnedPercent(draft)} aria-valuetext={`${learnedPercent(draft)}% ${STATUS[draft.status]}`} onChange={e=>setDraft(withLearningPercent(draft,Number(e.target.value)))}/></div>}
           {instructionalVideos.length>0 && <div className="section-timestamp">{instructionalVideos.length>1 && <label>Video<select aria-label="Section instructional video" value={timestampId} onChange={e=>{try{const time=parseTimestamp(timestampText),timestamps={...draft.instructionalTimestamps};if(time===undefined)delete timestamps[timestampId];else timestamps[timestampId]=time;setDraft({...draft,instructionalTimestamps:timestamps});setTimestampVideo(e.target.value);setFormError('');}catch(error){setFormError(String(error instanceof Error?error.message:error));}}}>{instructionalVideos.map(r=><option key={r.id} value={r.id}>{r.label}</option>)}</select></label>}<label>Timestamp in instructional<input aria-label="Timestamp in instructional" inputMode="numeric" value={timestampText} placeholder="m:ss" maxLength={16} onChange={e=>setTimestampText(e.target.value)}/></label></div>}
           {formError && <p className="form-error" role="alert">{formError}</p>}

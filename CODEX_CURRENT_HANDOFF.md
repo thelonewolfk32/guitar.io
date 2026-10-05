@@ -1,4 +1,8 @@
-# Current release: Guitar.io V1.4.4
+# Current release: Guitar.io V1.4.41
+
+Small GitHub-only update to test the V1.4.4 updater. Percentage/BPM controls and section speed select 5% increments; combined applied playback rates also snap to 5%. Native YouTube requests enforce the same grid. GP/imported tempos and raw recording sync anchors remain exact; no library migration or catalogue rewrite. Windows and Apple Silicon releases are built/published by GitHub Actions; do not replace or manually upgrade the user’s installed app for this test.
+
+# Previous release: Guitar.io V1.4.4
 
 User authorised a one-click updater and GitHub release. The only updater entrance is Help (?) → version number. UI is Check for updates, Auto-updater OFF/ON, and actionable status; no repository field, GitHub links or permanent help text. V1.4.3 users must install V1.4.4 manually once to obtain the installer. Old versions and published assets remain immutable.
 

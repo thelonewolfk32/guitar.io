@@ -20,10 +20,15 @@ const bytes=new a.exporter.Gp7Exporter().export(score),song={...await makeSong(b
 async function number(name,value){const field=page.getByLabel(name,{exact:true});await field.fill(String(value));await field.press('Enter');}
 try{
   await page.goto(url);await page.getByText('Start by adding your first guitar',{exact:true}).waitFor();await seed(page,url,[song],true);await page.goto(url);await capturePlayer(page);await button('Open Sync Study').click();await button('Select bar 4').waitFor();await page.waitForFunction(()=>window.__testApi.isReadyForPlayback);
+  assert.equal(await page.getByLabel('Playback speed slider',{exact:true}).getAttribute('step'),'5');
+  assert.equal(await page.getByLabel('Playback speed',{exact:true}).getAttribute('step'),'5');
+  await number('Playback speed',92.7);await page.waitForFunction(()=>window.__testApi.playbackSpeed===.95);assert.equal(await page.getByLabel('Playback speed',{exact:true}).inputValue(),'95');
   await number('Playback speed',90);await page.waitForFunction(()=>window.__testApi.playbackSpeed===.9);
   await button('Speed display unit').click();assert.equal(await page.getByLabel('Playback BPM',{exact:true}).inputValue(),'108');
-  await number('Playback BPM',80);await page.waitForFunction(()=>Math.abs(window.__testApi.playbackSpeed-2/3)<.000001);
-  await button('Select bar 3').click();assert.equal(await page.getByLabel('Playback BPM',{exact:true}).inputValue(),'80','Bar tempo stays internal');
+  await number('Playback BPM',80);await page.waitForFunction(()=>Math.abs(window.__testApi.playbackSpeed-.65)<.000001);
+  await button('Edit Intro').click();assert.equal(await page.getByLabel('Section playback speed',{exact:true}).getAttribute('step'),'5');await page.getByLabel('Section playback speed',{exact:true}).fill('75');await button('Save section').click();await page.waitForFunction(()=>window.__testApi.playbackSpeed===.5);
+  await button('Edit Intro').click();await page.getByLabel('Section playback speed',{exact:true}).fill('100');await button('Save section').click();await page.waitForFunction(()=>window.__testApi.playbackSpeed===.65);
+  await button('Select bar 3').click();assert.equal(await page.getByLabel('Playback BPM',{exact:true}).inputValue(),'78','Bar tempo stays internal');
   assert.equal(await page.locator('.song-title-row h1').evaluate(e=>getComputedStyle(e).color),'rgb(231, 233, 235)');
   assert.equal(await page.getByLabel('Playback BPM',{exact:true}).evaluate(e=>getComputedStyle(e).borderRadius),'12px');
   await page.evaluate(()=>window.__workspaceApi=window.__testApi);await button('Player settings').click();await button('Splicer').click();await page.getByLabel('Splicer right part').selectOption('1');
@@ -50,8 +55,8 @@ try{
   if(desktop){
     console.log('Desktop 90% accepted; checking native video rate.');
     const frame=page.frames().find(f=>f.url().startsWith('https://www.youtube.com/embed/'));assert(frame);
-    await frame.waitForFunction(()=>document.querySelector('video').playbackRate===.9);await number('Playback BPM',80);await frame.waitForFunction(()=>Math.abs(document.querySelector('video').playbackRate-2/3)<.000001);
-    await button('Select bar 2').click();await page.waitForFunction(()=>window.__video.time===7);assert.equal(await page.getByLabel('Playback BPM',{exact:true}).inputValue(),'80');
+    await frame.waitForFunction(()=>document.querySelector('video').playbackRate===.9);await number('Playback BPM',80);await frame.waitForFunction(()=>Math.abs(document.querySelector('video').playbackRate-.65)<.000001);
+    await button('Select bar 2').click();await page.waitForFunction(()=>window.__video.time===7);assert.equal(await page.getByLabel('Playback BPM',{exact:true}).inputValue(),'78');
     await frame.getByRole('button',{name:'80% gear speed'}).click();await page.waitForFunction(()=>window.__testApi.playbackSpeed===.8);assert.equal(await page.getByLabel('Playback BPM',{exact:true}).inputValue(),'96');
     // Cross-origin frames cannot invoke native IPC, and unrelated messages cannot change speed.
     assert.equal(await frame.evaluate(()=>typeof window.guitarIO),'undefined');

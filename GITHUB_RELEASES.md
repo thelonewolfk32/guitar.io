@@ -51,23 +51,23 @@ Do not replace published ZIPs with different code under the same version. Ship a
 
 `.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. A native Apple Silicon job checks local signing, bundle replacement and cleanup before tagged releases can publish; MacBook playback, relaunch and approval prompts still need a user-session test.
 
-For version 1.4.5:
+For version 1.4.42:
 
 1. Pull `main`, make changes, then run in the source folder:
 
    ```sh
-   npm version 1.4.5 --no-git-tag-version
+   npm version 1.4.42 --no-git-tag-version
    npm test
    npm run build
    ```
 
-2. Add `CHANGELOG-v1.4.5.md` and `VALIDATION-v1.4.5.md`. Record changes and actual test results; the packages include these documents.
+2. Add `CHANGELOG-v1.4.42.md` and `VALIDATION-v1.4.42.md`. Record changes and actual test results; the packages include these documents.
 3. Commit the source, version/lock files and documents to `main`, then push.
 4. After checking the `main` workflow is green, create and push the tag:
 
    ```sh
-   git tag v1.4.5
-   git push origin v1.4.5
+   git tag v1.4.42
+   git push origin v1.4.42
    ```
 
 5. The tag workflow checks that the version matches `package.json`, builds both ZIPs, uploads them to a draft release, and publishes the complete release after successful checks.

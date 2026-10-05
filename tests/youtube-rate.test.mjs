@@ -7,7 +7,7 @@ const {youtubeFrame,rateScript}=createRequire(import.meta.url)('../electron/yout
 test('fine YouTube rates apply to the selected video and preserve pitch with actual-rate feedback',()=>{
   const listeners=[],messages=[],video={playbackRate:1,addEventListener:(event,fn)=>{if(event==='ratechange')listeners.push(fn);}};
   const context=vm.createContext({performance,document:{addEventListener:()=>{},querySelector:()=>video,getElementById:()=>({setPlaybackRate:value=>video.playbackRate=Math.round(value*4)/4})},parent:{postMessage:value=>messages.push(value)}});
-  for(const rate of [.9,80/120,.37,1.1])assert.equal(vm.runInContext(rateScript('dQw4w9WgXcQ',rate),context),rate);
+  for(const [requested,applied] of [[.9,.9],[80/120,.65],[.37,.35],[1.1,1.1]])assert.equal(vm.runInContext(rateScript('dQw4w9WgXcQ',requested),context),applied);
   assert.equal(video.preservesPitch,true);assert.equal(listeners.length,1);assert.equal(messages.at(-1).rate,1.1);
   video.__guitarioControl.userAction=performance.now();video.playbackRate=.8;listeners[0]();assert.equal(messages.at(-1).rate,.8,'Gear changes report actual speed');
   vm.runInContext(rateScript('dQw4w9WgXcQ',.9,10),context);

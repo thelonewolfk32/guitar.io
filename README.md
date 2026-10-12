@@ -2,7 +2,9 @@
 
 A local guitar library and practice player for Windows and Apple Silicon Mac. Import Guitar Pro or Songsterr tabs, organise songs and guitars, track section progress, practise with MIDI or YouTube, and splice parts into a learning arrangement.
 
-**Current version: 1.5.0.**
+**Current version: 1.5.1.** Download checked desktop builds from [Releases](https://github.com/thelonewolfk32/guitar.io/releases/latest).
+
+V1.5.1 downloads all missing GP/audio/artwork during sync, repairs older metadata-only songs, condenses Help and labels Learn (beta). See [the sync-fix handover](SYNC_FIX_HANDOFF.md) and [changes](CHANGELOG-v1.5.1.md).
 
 - [Download Windows and Mac](https://github.com/thelonewolfk32/guitar.io/releases/latest)
 - [First-time GitHub and publishing guide](GITHUB_RELEASES.md)
@@ -27,4 +29,4 @@ Build from source with Node.js 24: run npm ci, npm test and npm run build in dev
 
 Clone this repository on the Mac and open its root in your coding tool; a GitHub clone already contains `package.json` at the top level. Read [IOS_HANDOFF.md](IOS_HANDOFF.md) for Xcode/Codex/Claude/Cursor connections, GitHub authentication, current-source refresh, free Personal Team installation and Windows/Mac/iPhone sync checks. [AGENTS.md](AGENTS.md) gives coding tools the project context automatically where supported.
 
-The iOS project exists but still needs native compilation and device testing. From the clone root, use `npm ci`, `npm run ios:sync` and `npm run ios:open` on the Mac before running it in Xcode. GitHub carries source and desktop app updates; your personal library arrives through LAN sync. The published V1.5.0 desktop release remains the baseline.
+The iOS project exists but still needs native compilation and device testing. From the clone root, use `npm ci`, `npm run ios:sync` and `npm run ios:open` on the Mac before running it in Xcode. GitHub carries source and desktop app updates; your personal library arrives through LAN sync. Use V1.5.1 source for the complete-file sync fix.

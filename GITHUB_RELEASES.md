@@ -53,23 +53,23 @@ Do not replace published ZIPs with different code under the same version. Ship a
 
 `.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. Native Apple Silicon jobs on macOS 15 and 26 test bundled Electron staging, signing, replacement, invalid entitlements and cleanup before tagged publication. Interactive MacBook playback, relaunch and Gatekeeper still need a user-session test.
 
-For version 1.5.0:
+For version 1.5.1 (use a new version for later releases):
 
 1. Pull `main`, make changes, then run in the source folder:
 
    ```sh
-   npm version 1.5.0 --no-git-tag-version
+   npm version 1.5.1 --no-git-tag-version
    npm test
    npm run build
    ```
 
-2. Add `CHANGELOG-v1.5.0.md` and `VALIDATION-v1.5.0.md`. Record changes and actual test results; the packages include these documents.
+2. Add `CHANGELOG-v1.5.1.md` and `VALIDATION-v1.5.1.md`. Record changes and actual test results; the packages include these documents.
 3. Commit the source, version/lock files and documents to `main`, then push.
 4. After checking the `main` workflow is green, create and push the tag:
 
    ```sh
-   git tag v1.5.0
-   git push origin v1.5.0
+   git tag v1.5.1
+   git push origin v1.5.1
    ```
 
 5. The tag workflow checks that the version matches `package.json`, builds both ZIPs, uploads them to a draft release, and publishes the complete release after successful checks.
@@ -110,5 +110,13 @@ An older V1.4.4/V1.4.41 Mac updater that fails with `AMFIUnserializeXML` needs o
 V1.4.3 only has the earlier download checker. Install V1.4.4 manually once; subsequent versions can be installed from inside the app. Fully signed/notarized Mac distribution remains a later Apple Developer setup.
 
 Official references: [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository), [Releases API](https://docs.github.com/en/rest/releases/releases), [Electron lifecycle](https://www.electronjs.org/docs/latest/api/app).
+
+## Hosting updates privately
+
+GitHub is only the current update feed and download host. A private HTTPS service can provide a version manifest and Windows/Mac archives instead. For this app, replace the GitHub release lookup and download URL validation in `electron/update-service.cjs`, while preserving the existing installer, profile preservation, version checks and rollback. Installed clients need one migration release through their current feed before they can use a new service.
+
+For paid distribution, use per-user authentication and short-lived download URLs backed by private storage, such as S3 and CloudFront. Keep signing keys on the publishing server; verify signed update metadata and archive integrity in the app. Do not embed a shared GitHub token or server credential in distributed applications. A private source repository alone does not make a download service work for installed clients. Native iOS distribution remains separate through Apple's installation channels.
+
+References: [Electron update servers](https://www.electronjs.org/docs/latest/tutorial/updates), [CloudFront private distribution](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/PrivateContent.html).
 
 Packaging defaults to `release/artifacts` inside the source folder and uses the pinned dependency runtime. No older app folder is required. The maintained local Windows installation is `Guitar.io.exe` in the main workspace folder, beside `development/guitar-io`. Updating replaces packaged files in place and preserves the development folder.

@@ -21,8 +21,8 @@ for(const scenario of ['manual-and-force','skipped-versions','startup-rollback']
  try{
   await fs.cp(packagePath,installed,{recursive:true});await fs.mkdir(profile);await fs.writeFile(path.join(profile,'updates.json'),JSON.stringify({autoUpdate:false}));
   asar.extractAll(path.join(installed,'resources/app.asar'),source);
-  const next=scenario==='skipped-versions'?version:'1.5.1';
-  // A real old installer exercises a complete 1.4.4 -> 1.5.0 replacement,
+  const parts=version.split('.').map(Number),next=scenario==='skipped-versions'?version:`${parts[0]}.${parts[1]}.${parts[2]+1}`;
+  // A real old installer exercises a complete 1.4.4 -> current replacement,
   // including its hidden restart, rather than requiring intermediate releases.
   if(scenario==='skipped-versions'){
    const old=path.join(work,'old-source');await fs.cp(source,old,{recursive:true});

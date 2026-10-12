@@ -37,6 +37,8 @@ jobs:
           $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
       - run: node scripts/package-local.mjs
+      - name: Test complete file sync and offline access in packaged Windows apps
+        run: node tests/sync-files-desktop.mjs --packaged
       - name: Test packaged Windows update, skipped versions and rollback
         run: node tests/v150-updater-desktop.mjs
       - run: ./scripts/archive-windows.ps1

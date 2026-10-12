@@ -2,7 +2,7 @@
 
 ## Start here
 
-The current desktop baseline is **1.5.0**, tag `v1.5.0` (`d891480`). Read `CODEX_CURRENT_HANDOFF.md` and `package.json`. For Mac/iPhone work, also read `IOS_HANDOFF.md` and `SYNC.md`. Treat the current user's instructions as the scope; this file does not authorize additional releases or builds.
+The current desktop version is **1.5.1**, release tag `v1.5.1`. Read `SYNC_FIX_HANDOFF.md`, `CODEX_CURRENT_HANDOFF.md` and `package.json`. Earlier published V1.5.0 is tag `v1.5.0` (`d891480`). For Mac/iPhone work, also read `IOS_HANDOFF.md` and `SYNC.md`. Treat the current user's instructions as the scope; this file does not authorize additional releases or builds.
 
 This repository root contains `package.json`, `src`, `electron`, `shared`, `scripts` and `ios`. The original Windows workspace keeps this checkout under `development/guitar-io`; a GitHub clone is already the source root.
 
@@ -18,7 +18,7 @@ This repository root contains `package.json`, `src`, `electron`, `shared`, `scri
 ## Storage and sync compatibility
 
 - Keep IndexedDB `guitar-io-v1`, schema 4; desktop `guitario://app/`; iOS `capacitor://localhost`. Preserve installed desktop profiles and device identities. Do not copy a whole profile between devices.
-- Home-screen reads use lightweight summaries. Original GP/audio/artwork reads are lazy; saves journal individual changes. Avoid full-library reads/writes during routine navigation or sync.
+- Home-screen reads use lightweight summaries. Original GP/audio/artwork reads in views are lazy; V1.5.1 sync downloads queued missing files automatically, with a one-time legacy presence check. Saves journal individual changes. Avoid full-library reads/writes during routine navigation or sync.
 - Reuse field clocks, tombstones, per-peer pull/push checkpoints and atomic apply/checkpoint in `src/sync-*`/`src/lan-sync.ts`. Preserve missing-base repair for unseen song entities. Do not replace these with one global last-synced timestamp.
 - Recent activity, album names and artwork references are metadata. Missing artwork must not stop song metadata arriving. Keep Story preview tuning/BPM/cache isolated per song.
 - LAN envelopes/pairing must remain compatible with V1.5 desktops. Keep private-address validation, encryption and verified six-digit pairing. iOS is a foreground/resume client of desktop hosts; do not claim continuous background service or direct phone hosting.

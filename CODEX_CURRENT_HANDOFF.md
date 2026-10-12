@@ -1,3 +1,7 @@
+# Guitar.io V1.5.1 complete-file sync
+
+Current source is 1.5.1/build 151, based on commit c7701cf and identified for release by tag v1.5.1. [Desktop releases](https://github.com/thelonewolfk32/guitar.io/releases/latest) are published through the checked Actions workflow. Read [SYNC_FIX_HANDOFF.md](SYNC_FIX_HANDOFF.md), [CHANGELOG-v1.5.1.md](CHANGELOG-v1.5.1.md) and [VALIDATION-v1.5.1.md](VALIDATION-v1.5.1.md) for the new complete-file sync and actual native-test limits. The V1.5.0 text below is the published baseline history; its on-open-only sync behaviour is superseded by the 1.5.1 queue.
+
 # Guitar.io V1.5.0
 
 Published baseline: tag `v1.5.0`, commit `d891480`, https://github.com/thelonewolfk32/guitar.io/releases/tag/v1.5.0. Active source in the original Windows workspace is `development/guitar-io`; a GitHub clone has `package.json` at its root. Stable local Windows installation: Guitar.io.exe directly in the main workspace; preserve development/, resources/ and locales/. Generated Windows/Mac/Source ZIPs and checksums: release/artifacts in source. Runtime: pinned Electron 44.4.5 dependency; no old-version baselines required. Old packages/reference source/cache and old release notes removed from current workspace; history remains in Git and immutable GitHub Releases. Preserve real profile C:/Users/nkend/AppData/Roaming/Guitar.io and the existing Mac Application Support/Guitar.io profile.

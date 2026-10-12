@@ -64,7 +64,7 @@ test('new remote songs have lazy source placeholders and cached files resume by 
   const rows=[wire(change({hash:original.hash,byteLength:source.length},1,'source',id,timestamp)),wire(change({...meta,id,artworkAssetId:null},2,'song',id,timestamp))];
   await applySyncPage(rows);assert((await readLibraryIndex()).songs.some(s=>s.id===id));assert.equal((await contentRecord('source',id)).source,undefined);
   await storeTransfer('source/'+id,source.subarray(0,100),0,source.length);assert.equal((await transferProgress('source/'+id)).offset,100);assert.equal((await transferChunks('source/'+id))[0].length,100);
-  await assert.rejects(finishTransfer('source',id,new Blob([source.subarray(0,20)])),/checksum/);await finishTransfer('source',id,new Blob([source]));assert.equal(await transferProgress('source/'+id),undefined);assert.deepEqual((await readSong(id)).source,source);
+  await assert.rejects(finishTransfer('source',id,new Blob([source.subarray(0,20)])),/size/);await finishTransfer('source',id,new Blob([source]));assert.equal(await transferProgress('source/'+id),undefined);assert.deepEqual((await readSong(id)).source,source);
 });
 test('invalid incoming pages cannot advance checkpoints or partially write state',async()=>{
   const head=await syncHead(),valid=wire(change({title:'Must roll back'},30,'song','fixture-002','2093-01-01T00:00:00.000Z')),bad=wire(change({source:[1,2,3]},31,'song','fixture-002','2093-01-01T00:00:01.000Z'));

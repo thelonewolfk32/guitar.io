@@ -1,10 +1,12 @@
-Guitar.io V1.5.0
+Guitar.io V1.5.1
 
 Windows: extract the full ZIP, then open Guitar.io.exe.
 Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app.
 
 Update BOTH paired computers, then use Device sync > Sync now.
-Missing metadata repair resumes the existing checkpoint without resetting the library.
+Sync now downloads missing Guitar Pro files, MP3 attachments and artwork for offline use.
+Keep source apps open and devices awake until Files saved for offline use appears.
+Existing metadata-only songs repair without resetting pairing or checkpoints.
 Device sync > Show diagnostics (OFF by default) shows failures and exports a report.
 
 Help (?) > version number opens Updates.

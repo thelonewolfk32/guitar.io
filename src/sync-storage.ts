@@ -53,7 +53,37 @@ function requireMeta(row:SyncRow,data:Record<string,unknown>){
   if(row.entity==='asset' && (!['audio','artwork'].includes(String(data.kind))||!['image/png','image/jpeg','image/webp','audio/mpeg','audio/mp3'].includes(String(data.mime))||typeof data.name!=='string'||!Number.isSafeInteger(data.byteLength)||Number(data.byteLength)<1||Number(data.byteLength)>250*1024*1024))throw new Error('Invalid attachment metadata.');
   if(row.entity==='folder' && (typeof data.name!=='string'||!data.name.trim()||data.name.length>1000||!/^#[0-9a-f]{6}$/i.test(String(data.color))))throw new Error('Invalid folder metadata.');
 }
-/** Merge and checkpoint in one transaction. Bytes are downloaded lazily on opening. */
+export type PendingContent={kind:'source'|'asset';id:string;name:string;byteLength:number};
+const pendingKey=(kind:'source'|'asset',id:string)=>`lan:pending-content:${kind}/${id}`;
+const pendingRange=()=>IDBKeyRange.bound('lan:pending-content:','lan:pending-content:\uffff');
+function queueContent(tx:IDBTransaction,kind:'source'|'asset',id:string,record:any){
+  const key=pendingKey(kind,id);
+  if(!record || (kind==='source'?record.source:record.blob))tx.objectStore('settings').delete(key);
+  else tx.objectStore('settings').put({kind,id,name:record.name || id,byteLength:Number(record.byteLength)||0},key);
+}
+/** One-time repair for existing metadata-only libraries. Routine checks read
+ * the small durable queue, never scan cached originals or parse scores. */
+export async function initializeContentQueue(){
+  const d=await db(),tx=d.transaction(['settings','songSources','assets'],'readwrite'),p=done(tx);
+  if(!await req(tx.objectStore('settings').get('lan:content-queue-ready'))){
+    for(const [store,kind] of [['songSources','source'],['assets','asset']] as const){
+      const q=tx.objectStore(store).openCursor();
+      q.onsuccess=()=>{const cursor=q.result;if(cursor){queueContent(tx,kind,String(cursor.key),cursor.value);cursor.continue();}};
+    }
+    tx.objectStore('settings').put(true,'lan:content-queue-ready');
+  }
+  await p;
+}
+export async function pendingSyncContent():Promise<PendingContent[]>{
+  const d=await db();return req(d.transaction('settings').objectStore('settings').getAll(pendingRange()));
+}
+export async function clearPendingContent(kind:'source'|'asset',id:string){
+  const d=await db(),tx=d.transaction('settings','readwrite'),p=done(tx);tx.objectStore('settings').delete(pendingKey(kind,id));await p;
+}
+async function discardTransfer(key:string){
+  const d=await db(),tx=d.transaction(['syncTransfers','syncTransferChunks'],'readwrite'),p=done(tx);removeTransfer(tx,key);await p;
+}
+/** Merge, queue missing bytes and checkpoint atomically. */
 export async function applySyncPage(input:unknown,checkpoint?:{peer:string;cursor:number}){
   const incoming=validateSyncRows(input),d=await db(),tx=d.transaction(storageStores,'readwrite'),p=done(tx),affected=new Set<string>();let accepted=0;
   let current:SyncRow|undefined;
@@ -68,16 +98,16 @@ export async function applySyncPage(input:unknown,checkpoint?:{peer:string;curso
       merged.revision=revision;tx.objectStore('syncEntities').put(merged);tx.objectStore('settings').put(revision,'syncHead');accepted++;clock=Math.max(clock,...Object.values(change.versions).map(s=>Date.parse(s.timestamp)));
       const id=change.entityId,deleted=merged.operation==='delete';
       if(change.entity==='song'){
-        if(deleted){const index=await req(tx.objectStore('songIndex').get(id));for(const assetId of index?.assetIds || [])tx.objectStore('assetRefs').delete([assetId,`song:${id}`]);tx.objectStore('songs').delete(id);tx.objectStore('songIndex').delete(id);tx.objectStore('songSources').delete(id);forgetSource(id);}else{
+        if(deleted){const index=await req(tx.objectStore('songIndex').get(id));for(const assetId of index?.assetIds || [])tx.objectStore('assetRefs').delete([assetId,`song:${id}`]);tx.objectStore('songs').delete(id);tx.objectStore('songIndex').delete(id);tx.objectStore('songSources').delete(id);queueContent(tx,'source',id,undefined);forgetSource(id);}else{
           const previous=await req(tx.objectStore('songs').get(id));if(previous?.hash && previous.hash!==data.hash)throw new Error('A paired device tried to replace an immutable tab.');
           const details={...data,id,updatedAt:merged.timestamp,fieldUpdatedAt:Object.fromEntries(Object.entries(merged.versions).filter(([k])=>k.startsWith('f:')).map(([k,v])=>[k.slice(2),v.timestamp])),sectionsByTrack:previous?.sectionsByTrack || {},sections:[],annotations:previous?.annotations || [],media:previous?.media || {}};
           tx.objectStore('songs').put(details);tx.objectStore('settings').put(true,'seeded');
         }affected.add(id);
       }else if(change.entity==='source'||change.entity==='asset'){
         const store=tx.objectStore(change.entity==='source'?'songSources':'assets'),previous=await req(store.get(id));
-        if(deleted){store.delete(id);if(change.entity==='source')forgetSource(id);else tx.objectStore('artworkThumbs').delete(id);}else{
+        if(deleted){store.delete(id);queueContent(tx,change.entity,id,undefined);if(change.entity==='source')forgetSource(id);else tx.objectStore('artworkThumbs').delete(id);}else{
           if(previous && previous.hash && data.hash && previous.hash!==data.hash)throw new Error('Immutable content changed.');
-          store.put({...data,id,...(previous?.source?{source:previous.source}:{}),...(previous?.blob?{blob:previous.blob}:{})});
+          const record={...data,id,...(previous?.source?{source:previous.source}:{}),...(previous?.blob?{blob:previous.blob}:{})};store.put(record);queueContent(tx,change.entity,id,record);
         }
       }else if(change.entity==='guitar'||change.entity==='folder'){
         const key=change.entity==='guitar'?'guitars':'folders',list=await req(tx.objectStore('settings').get(key)) || [],filtered=list.filter((item:{id:string})=>item.id!==id);if(!deleted)filtered.push({...data,id});if(key==='guitars')validateGuitars(filtered);tx.objectStore('settings').put(filtered,key);
@@ -127,9 +157,12 @@ export async function storeTransfer(key:string,bytes:Uint8Array,offset:number,si
 function removeTransfer(tx:IDBTransaction,key:string){tx.objectStore('syncTransfers').delete(key);tx.objectStore('syncTransferChunks').delete(IDBKeyRange.bound([key,0],[key,Number.MAX_SAFE_INTEGER]));}
 export async function finishTransfer(kind:'source'|'asset',id:string,blob:Blob){
   const record=await contentRecord(kind,id);if(!record)throw new Error('Content was removed while downloading.');
+  if(record.byteLength && blob.size!==record.byteLength){await discardTransfer(`${kind}/${id}`);throw new Error('Downloaded file size does not match.');}
   const bytes=kind==='source'?new Uint8Array(await blob.arrayBuffer()):undefined;
-  if(kind==='source' && /^[a-f0-9]{64}$/.test(record.hash)){const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as BufferSource))].map(b=>b.toString(16).padStart(2,'0')).join('');if(hash!==record.hash)throw new Error('Downloaded tab checksum does not match.');}
-  const d=await db(),store=kind==='source'?'songSources':'assets',tx=d.transaction([store,'syncTransfers','syncTransferChunks'],'readwrite'),p=done(tx);
-  tx.objectStore(store).put({...record,...(kind==='source'?{source:bytes}:{blob:blob.slice(0,blob.size,record.mime)})});removeTransfer(tx,`${kind}/${id}`);await p;
+  if(kind==='source' && /^[a-f0-9]{64}$/.test(record.hash)){const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as BufferSource))].map(b=>b.toString(16).padStart(2,'0')).join('');if(hash!==record.hash){await discardTransfer(`${kind}/${id}`);throw new Error('Downloaded tab checksum does not match.');}}
+  const d=await db(),store=kind==='source'?'songSources':'assets',tx=d.transaction([store,'settings','syncTransfers','syncTransferChunks'],'readwrite'),p=done(tx);
+  const current=await req(tx.objectStore(store).get(id));
+  if(!current || current.hash!==record.hash){tx.abort();await p.catch(()=>{});throw new Error('Content was removed while downloading.');}
+  tx.objectStore(store).put({...current,...(kind==='source'?{source:bytes}:{blob:blob.slice(0,blob.size,current.mime)})});removeTransfer(tx,`${kind}/${id}`);queueContent(tx,kind,id,undefined);await p;
 }
 export async function cleanTransfers(){const d=await db(),tx=d.transaction(['syncTransfers','syncTransferChunks','changes','settings'],'readwrite'),p=done(tx);const rows=await req(tx.objectStore('syncTransfers').getAll());let bytes=0;for(const row of rows.sort((a,b)=>b.updatedAt-a.updatedAt)){bytes+=row.offset;if(row.updatedAt<Date.now()-7*86400000||bytes>64*1024*1024)removeTransfer(tx,row.key);}const head=Number(await req(tx.objectStore('settings').get('syncHead'))) || 0;if(head>2000)tx.objectStore('changes').delete(IDBKeyRange.upperBound(head-2000));await p;}

@@ -1,6 +1,8 @@
-# Guitar.io V1.5.0 — Mac/iPhone and AI coding handover
+# Guitar.io V1.5.1 — Mac/iPhone and AI coding handover
 
-Start here when continuing Guitar.io in Codex, Cursor, Claude Code or another coding tool on the Mac. This replaces the earlier V1.3/V1.4.1 handover. The desktop baseline is the published **V1.5.0** release, tag `v1.5.0`, commit `d891480`. Read [AGENTS.md](AGENTS.md) for project rules and [CODEX_CURRENT_HANDOFF.md](CODEX_CURRENT_HANDOFF.md) for the current implementation.
+Use V1.5.1 source from GitHub or the matching source ZIP, and read [SYNC_FIX_HANDOFF.md](SYNC_FIX_HANDOFF.md) first. The earlier V1.5.0 setup history remains below; V1.5.1 adds complete-file sync and keeps the same native project.
+
+Start here when continuing Guitar.io in Codex, Cursor, Claude Code or another coding tool on the Mac. This replaces the earlier V1.3/V1.4.1 handover. The current desktop/source version is **V1.5.1**, tag `v1.5.1`; the earlier V1.5.0 baseline is commit `d891480`. Read [AGENTS.md](AGENTS.md) for project rules and [CODEX_CURRENT_HANDOFF.md](CODEX_CURRENT_HANDOFF.md) for the current implementation.
 
 **Status:** Windows and Apple Silicon desktop builds are published. An iOS Capacitor/Xcode project and native LAN adapter exist, but Swift compilation, iPhone installation, WebKit playback and three-device sync have not been verified. This handover does not include an IPA or a newly built app. Generated web assets are excluded from Git: a fresh clone must run `npm run ios:sync` before Xcode can load the app.
 
@@ -49,11 +51,11 @@ git clone https://github.com/thelonewolfk32/guitar.io.git guitar-io
 cd guitar-io
 git fetch origin --tags
 git switch -c ios-v1.5-baseline origin/main
-git merge-base --is-ancestor v1.5.0 HEAD
+git merge-base --is-ancestor v1.5.1 HEAD
 git status --short
 ```
 
-The ancestry command must succeed: the working branch includes the published baseline and the newer handover. `git show v1.5.0:package.json` can confirm the original release. Do not check out only the old tag if you want the updated handover. If future `main` contains another release, inspect its changes and intentionally choose the intended base.
+The ancestry command must succeed: the working branch includes the complete-file sync fix. `git show v1.5.1:package.json` can confirm the release version. If future `main` contains another release, inspect its changes and intentionally choose the intended base.
 
 For an **existing clone**, inspect `git status` first, commit or preserve local work, then fetch/pull the appropriate branch. Do not reset local changes or clone over it.
 
@@ -125,7 +127,7 @@ npm run ios:open
 
 `ios:sync` runs the current production web build/typecheck and Capacitor sync. It copies `dist` into `ios/App/App/public` and refreshes Capacitor configuration and its managed Swift package. It does **not** compile or sign an iPhone binary. Run it again after shared UI/TypeScript changes; an Xcode-only rebuild will otherwise show the previous web assets. Do not run `cap add ios` again or use an old V1.3/V1.4 project ZIP.
 
-The iOS project now has `MARKETING_VERSION = 1.5.0` and `CURRENT_PROJECT_VERSION = 150` in both configurations. Its target is iOS **16.0+**; Capacitor's app ID is `io.guitario.mobile`. `package.json` remains 1.5.0. Increment the native build number for later distinct test uploads; a new public desktop release needs its own new version.
+The iOS project now has `MARKETING_VERSION = 1.5.1` and `CURRENT_PROJECT_VERSION = 151` in both configurations. Its target is iOS **16.0+**; Capacitor's app ID is `io.guitario.mobile`. `package.json` is 1.5.1. Increment the native build number for later distinct test uploads; a new public desktop release needs its own new version.
 
 Unsigned simulator build, after `ios:sync`:
 
@@ -152,7 +154,7 @@ Keep V1.5 running on the Windows PC and Mac desktop. Use **Device sync → Local
 
 An Ethernet PC and Wi-Fi Mac/iPhone can share a LAN. Devices must be awake, the desktop app open, and local network/firewall access allowed. Guest/client-isolated networks can block discovery. A phone has no listening desktop endpoint or six-digit host code: it discovers and initiates bidirectional exchanges with desktops.
 
-The first sync copies catalogue/edit metadata. Originals/attachments are represented by descriptors; GP/audio transfer on opening, artwork when requested by visible cards, and Story previews can request their tab content. Cached bytes work offline. There is no central cloud library yet. A missing uncached file needs an awake paired desktop that holds the bytes.
+Sync copies catalogue/edit metadata and then downloads missing GP/audio/artwork bytes for offline use. Existing metadata-only libraries repair automatically through a persistent queue. Updated desktop hosts also accept file uploads from foreground iOS clients. Keep source devices awake until downloads finish. There is no central cloud library yet.
 
 See [SYNC.md](SYNC.md) for the protocol, limits and diagnostics. Preserve the V1.5 base-metadata repair: unknown songs must receive complete metadata before partial edits. Recent activity fields `lastOpenedAt`, `lastPlayedAt` and `lastPlayedBar`, album names and artwork references already participate in song sync. Missing artwork must not block a song or its album name.
 
@@ -164,7 +166,7 @@ See [SYNC.md](SYNC.md) for the protocol, limits and diagnostics. Preserve the V1
 | `ios/App/App/GuitarLocalPlugin.swift` | Bonjour discovery, LAN-only URLSession transport and allowed Songsterr HTTPS JSON |
 | `ios/App/App/GuitarViewController.swift`, `SceneDelegate.swift`, `Base.lproj/Main.storyboard` | Register and use the custom Capacitor controller/plugin |
 | `src/storage.ts`, `src/song-summary.ts` | IndexedDB, lightweight library summaries, individual writes and lazy original/asset reads |
-| `src/sync-model.ts`, `src/sync-storage.ts`, `src/lan-sync.ts` | Field clocks, delta pages, base repair, atomic apply/checkpoints and lazy downloads |
+| `src/sync-model.ts`, `src/sync-storage.ts`, `src/lan-sync.ts` | Field clocks, delta pages, base repair, atomic apply/checkpoints and complete-file sync |
 | `shared/lan-crypto.mjs`, `shared/lan-pairing.mjs`, `electron/lan-service.mjs` | Compatible encryption/pairing and desktop host transport |
 | `src/RecentStories.tsx`, `src/story-cache.ts`, `src/story-player.ts` | Ten recent songs, per-song preview caching, MIDI pitch/tempo and progress |
 | `src/MediaPanel.tsx`, `src/Splicer.tsx`, `src/SpliceComparison.tsx` | Recording player/sync settings and splice comparison |
@@ -202,10 +204,10 @@ Desktop V1.5 validation is in [VALIDATION-v1.5.0.md](VALIDATION-v1.5.0.md). It d
 
 ## Publish source without replacing the desktop baseline
 
-Push iOS work on its branch and open a pull request targeting `main`. Pull the accepted source on the other computer before continuing there. For a handover-only update, keep `package.json` at 1.5.0, keep `v1.5.0` and its release assets immutable, and avoid creating a version tag. The existing Actions workflow builds desktop candidates on `main` pushes; this handover commit uses `[skip ci]` to avoid a packaging run.
+Push iOS work on its branch and open a pull request targeting `main`. Pull the accepted source on the other computer before continuing there. For a handover-only update, keep `package.json` at the current version, preserve published version tags and release assets, and avoid creating a version tag. The existing Actions workflow builds desktop candidates on `main` pushes; documentation-only commits can use `[skip ci]` to avoid a packaging run.
 
 Future functional releases should run the relevant desktop/native checks and use a new increasing version. [GITHUB_RELEASES.md](GITHUB_RELEASES.md) describes desktop packaging; iOS has no automatic signed GitHub release workflow yet.
 
 ## Copy this prompt into the next coding tool
 
-> Continue Guitar.io's iPhone work from the published V1.5.0 baseline in https://github.com/thelonewolfk32/guitar.io. Read AGENTS.md, IOS_HANDOFF.md, CODEX_CURRENT_HANDOFF.md, SYNC.md and package.json from my local clone. Verify the branch includes v1.5.0 and preserve local changes. This is the existing React/TypeScript app in Capacitor 8.5.2 with custom Swift LAN transport, not a new SwiftUI rewrite. Work on an iOS branch. Verify access to the repository, authenticated GitHub tools when needed, the open Xcode project and available build destinations; report any connection that still needs my local setup. Refresh assets using npm run ios:sync, compile on this Mac and fix native issues, then help install on my iPhone through my free Personal Team. Preserve V1.5 Windows/Mac compatibility, existing storage origins/device IDs, delta sync/checkpoints/base repair, per-song Story tuning/BPM and private library data. Use isolated data to test Windows/Mac/iPhone pairing, recent activity, album/artwork, offline edits, missing originals, playback and touch layout. Record actual native results and remaining issues. Keep the published V1.5.0 release unchanged; signed/TestFlight distribution is a later step.
+> Continue Guitar.io's iPhone work from V1.5.1 in https://github.com/thelonewolfk32/guitar.io. Read AGENTS.md, IOS_HANDOFF.md, CODEX_CURRENT_HANDOFF.md, SYNC.md and package.json from my local clone. Verify the branch includes v1.5.1 and preserve local changes. This is the existing React/TypeScript app in Capacitor 8.5.2 with custom Swift LAN transport, not a new SwiftUI rewrite. Work on an iOS branch. Verify access to the repository, authenticated GitHub tools when needed, the open Xcode project and available build destinations; report any connection that still needs my local setup. Refresh assets using npm run ios:sync, compile on this Mac and fix native issues, then help install on my iPhone through my free Personal Team. Preserve V1.5 Windows/Mac compatibility, existing storage origins/device IDs, delta sync/checkpoints/base repair, complete-file sync and offline storage, per-song Story tuning/BPM and private library data. Use isolated data to test Windows/Mac/iPhone pairing, recent activity, album/artwork, offline edits, missing originals, playback and touch layout. Record actual native results and remaining issues. Keep published desktop releases unchanged; signed/TestFlight distribution is a later step.

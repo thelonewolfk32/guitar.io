@@ -15,7 +15,7 @@ test('account workspaces isolate songs and verified guest copy preserves the ori
 test('usage opt-in serialises counts arriving during a flush, and opt-out clears unsent events',async()=>{
  const old={session:account.session,request:account.request,entitlement:account.entitlement};const id='00000000-0000-4000-8000-000000000013';await switchStorageScope(id);account.session={user:{id}};account.entitlement=entitlementFor();const sent=[];
  account.request=async(route,body)=>{if(route==='usage')sent.push(structuredClone(body));return {};};
- try{await setUsageConsent(true);await usage('score_open');await Promise.all([flushUsage(),usage('manual_import')]);await flushUsage();assert.equal(sent[0].counts.score_open,1);assert.equal(sent[1].counts.manual_import,1);assert(!JSON.stringify(sent).includes(id));await usage('learn_open');await setUsageConsent(false);assert.equal(await syncSetting('usage-outbox'),null);await usage('score_open');assert.equal(await syncSetting('usage-outbox'),null);}
+ try{await setUsageConsent(true);await usage('score_open');await Promise.all([flushUsage(),usage('manual_import')]);await flushUsage();assert.equal(sent.length,1);await flushUsage(Date.now()+61000);assert.equal(sent[0].counts.score_open,1);assert.equal(sent[1].counts.manual_import,1);assert(!JSON.stringify(sent).includes(id));await usage('learn_open');await setUsageConsent(false);assert.equal(await syncSetting('usage-outbox'),null);await usage('score_open');assert.equal(await syncSetting('usage-outbox'),null);}
  finally{account.session=old.session;account.request=old.request;account.entitlement=old.entitlement;await switchStorageScope('');}
 });
 test('score bridge reassembles large binary payloads and rejects out-of-order or oversized chunks',()=>{

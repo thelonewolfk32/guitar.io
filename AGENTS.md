@@ -1,34 +1,36 @@
 # Guitar.io project guidance
 
-## Start here
+The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertising/Capacitor direction. Preserve all unrelated local work.
 
-The current desktop version is **1.5.1**, release tag `v1.5.1`. Read `SYNC_FIX_HANDOFF.md`, `CODEX_CURRENT_HANDOFF.md` and `package.json`. Earlier published V1.5.0 is tag `v1.5.0` (`d891480`). For Mac/iPhone work, also read `IOS_HANDOFF.md` and `SYNC.md`. Treat the current user's instructions as the scope; this file does not authorize additional releases or builds.
+## Current source and platforms
+- Package version: 1.6.0. Last previously published desktop release: 1.5.1. Do not infer publication or deployment from a version string.
+- Desktop remains React/TypeScript/Vite and Electron 44.4.5, Node 24.
+- The active Apple app is React Native 0.88.0 / React 19.3.0 under `mobile`, using bundle ID `io.guitario.mobile`.
+- Run the steps in IOS_REACT_NATIVE_HANDOFF.md. `mobile/scripts/configure-ios.rb` connects the native modules, bundled score WebView and Share Extension before CocoaPods/Xcode builds.
+- The previous `ios/App` Capacitor project is retained for migration and reference. Do not overwrite or regenerate it.
+- Mac desktop remains Electron. Do not imply the React Native iOS app is a replacement Mac desktop build.
+- Keep mobile/node_modules, Pods, generated score assets, signing files and personal libraries out of Git and Source ZIPs.
 
-This repository root contains `package.json`, `src`, `electron`, `shared`, `scripts` and `ios`. The original Windows workspace keeps this checkout under `development/guitar-io`; a GitHub clone is already the source root.
+## Product and privacy rules
+- No advertising. Cloud and LAN sync, manual imports, manual sections and basic Learn are free.
+- Free: five saved entries including pending music links, 150 MiB cloud storage; Premium: unlimited song count within 1 GiB. Every new file is at most 30 MiB.
+- Premium: automatic sections, synchronised YouTube, online enrichment/GP discovery and additional beta features. AUD 5/month or 50/year. Stem splitting has no active product or grant.
+- Archived entries remain stored and exportable and count towards new additions. After downgrade the user chooses active entries; do not delete their originals or progress.
+- Owner grants are independent of billing and audited. Admin endpoints require a verified owner role and MFA; never trust editable profile metadata for authorisation.
+- Use official metadata APIs and GP candidate links. Automatic downloads require an authorised provider; existing legacy Songsterr transport code is not a commercial download licence.
+- Feature usage is opt-in, aggregate and excludes song content, URLs, user IDs and persistent device IDs. Learning records and security/billing logs are separate account data.
+- Never send service-role, webhook, Stripe secret, RevenueCat server or update-signing keys to a client, Git, logs or an artifact.
 
-## Platform and tools
+## Storage and compatibility
+- Preserve the desktop guest DB `guitar-io-v1`, schema 4, and `guitario://app/` origin. Signed-in accounts use separate DBs.
+- Preserve source bytes, IDs, field clocks, tombstones, per-peer checkpoints and pending transfers. Routine library reads stay metadata-only.
+- Keep LAN V1.5 envelopes, verified six-digit pairing, private-address checks, encryption and byte verification. iOS is a foreground client.
+- Mobile SQLite/app-private files own the library. The score WebView is a disposable rendering/editing workspace; no cloud credentials enter it.
+- The one-time native migration reads the original WebKit `capacitor://localhost` origin, verifies record/byte counts and SHA-256, and retains original WebKit data and Keychain material for recovery.
+- Preserve desktop updater save/sync draining, package verification, skipped-version installation and rollback. iOS uses TestFlight/App Store updates.
 
-- React/TypeScript/Vite is shared between Electron desktop and Capacitor iOS. Continue the existing implementation instead of replacing it with a second app or an unrelated SwiftUI rewrite.
-- Use the lockfile and Node.js 24. Capacitor is pinned to 8.5.2; Electron to 44.4.5. Read package scripts before running commands.
-- `npm run ios:sync` builds/copies current web assets into the existing iOS project. Run it after web changes before native testing. Do not run `cap add ios` again. Generated web assets are excluded from Git.
-- Xcode project: `ios/App/App.xcodeproj`, scheme `App`. Native compilation/signing requires a Mac. Xcode 26.3+ provides Apple's external-agent MCP bridge via `xcrun mcpbridge`; verify tools and open project before relying on it.
-- Preserve `GuitarLocalPlugin.swift` registration through `GuitarViewController`, SceneDelegate and storyboard. Check native file imports/exports, WebKit audio and YouTube on a real device.
-- User has Apple Silicon, last reported Sequoia 15, and no paid Developer membership. Verify current OS/SDK compatibility. Personal Team is for temporary personal-device testing; do not report an uncompiled project as an installable IPA.
-
-## Storage and sync compatibility
-
-- Keep IndexedDB `guitar-io-v1`, schema 4; desktop `guitario://app/`; iOS `capacitor://localhost`. Preserve installed desktop profiles and device identities. Do not copy a whole profile between devices.
-- Home-screen reads use lightweight summaries. Original GP/audio/artwork reads in views are lazy; V1.5.1 sync downloads queued missing files automatically, with a one-time legacy presence check. Saves journal individual changes. Avoid full-library reads/writes during routine navigation or sync.
-- Reuse field clocks, tombstones, per-peer pull/push checkpoints and atomic apply/checkpoint in `src/sync-*`/`src/lan-sync.ts`. Preserve missing-base repair for unseen song entities. Do not replace these with one global last-synced timestamp.
-- Recent activity, album names and artwork references are metadata. Missing artwork must not stop song metadata arriving. Keep Story preview tuning/BPM/cache isolated per song.
-- LAN envelopes/pairing must remain compatible with V1.5 desktops. Keep private-address validation, encryption and verified six-digit pairing. iOS is a foreground/resume client of desktop hosts; do not claim continuous background service or direct phone hosting.
-- Keep private songs, backups, GP/audio, profile files, pairing codes/keys and credentials outside Git/public artifacts. Use isolated fixtures for verification.
-- Preserve V1.5 desktop updater startup/rollback and save/sync draining. Native iOS uses Xcode/TestFlight installation rather than desktop update ZIPs.
-
-## Checks and handover
-
-For functional source changes, run relevant tests (`npm test`, `npm run typecheck`, build/native checks as appropriate). For documentation-only work, check links, commands and `git diff --check`; do not rebuild merely to validate prose.
-
-Record the source commit and actual platform/SDK/test results. Mark unperformed Mac/iPhone checks as pending. Update the handover when native findings change.
-
-GitHub repository: `https://github.com/thelonewolfk32/guitar.io`. Use the existing clone/branch and preserve user changes. Published version tags and release ZIPs are immutable; new functional releases need new versions. Personal-library LAN sync is separate from Git/GitHub source updates.
+## Verification and release
+Run relevant tests, desktop/admin/mobile typechecks and builds. Use isolated fixtures; never copy a personal profile between devices. Record actual results in VALIDATION-v1.6.0.md.
+Native Swift compilation, signing, App Groups, real-device sound and Apple purchase validation must be reported separately from TypeScript/Metro/browser results.
+The user has no Supabase project yet and requested the local setup package. Do not claim staging, live payments, private update hosting or TestFlight deployment is complete.
+Published GitHub releases/tags are immutable. Source repository: https://github.com/thelonewolfk32/guitar.io.

@@ -3,6 +3,8 @@ import { Upload, Search, X, Image } from 'lucide-react';
 import type { Asset, Song, LibrarySong } from './types';
 import { findArtwork, searchArtwork, imageAsset, type ArtworkCandidate } from './artwork';
 import { useAssetUrl } from './ui';
+import {account} from './account';
+import {featureAccess} from './plans';
 export default function ArtworkControls({song,assets=[],library=[],onChange,onBusy,icons=false}:{song:Song;assets?:Asset[];library?:LibrarySong[];onChange:(song:Song,assets:Asset[])=>void;onBusy?:(busy:boolean)=>void;icons?:boolean}) {
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[choices,setChoices]=useState<ArtworkCandidate[]>([]),[images,setImages]=useState<Record<string,Asset>>({});
   const [searching,setSearching]=useState(false),[term,setTerm]=useState(''),[preview,setPreview]=useState('');
@@ -10,7 +12,7 @@ export default function ArtworkControls({song,assets=[],library=[],onChange,onBu
   const upload=useRef<HTMLInputElement>(null);
   useEffect(()=>{onBusy?.(busy);},[busy,onBusy]);
   useEffect(()=>{const asset=assets.find(a=>a.id===song.artworkAssetId);if(!asset){setPreview('');return;}const url=URL.createObjectURL(asset.blob);setPreview(url);return()=>URL.revokeObjectURL(url);},[assets,song.artworkAssetId]);
-  async function search(findMissing=false){setBusy(true);setError('');setSearching(true);try{
+  async function search(findMissing=false){if(!featureAccess(account.entitlement).onlineImport){setError('Premium includes online metadata and artwork searches. You can upload your own artwork.');return;}setBusy(true);setError('');setSearching(true);try{
     if(findMissing){const found=await findArtwork(song,library);onChange(found.song,found.assets);}
     const results=await searchArtwork(song,term.trim() || undefined);setChoices(results);
     const loaded=await Promise.allSettled(results.map(async c=>({c,asset:await imageAsset(c.image,c.title)})));

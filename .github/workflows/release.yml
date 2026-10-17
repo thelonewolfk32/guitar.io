@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
@@ -25,6 +26,7 @@ jobs:
           python-version: '3.12'
       - run: npm ci
       - run: npm test
+      - run: npm run services:typecheck && npm run admin:typecheck && npm run admin:build
       - run: npm run build
       - name: Check Mac updater command
         shell: bash
@@ -37,6 +39,10 @@ jobs:
           $version=(Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
       - run: node scripts/package-local.mjs
+      - name: Test guitar deletion, encrypted sessions, beta UI and update alert
+        run: node tests/v152-desktop.mjs --packaged
+      - name: Test free library allowances, archive selection and score controls
+        run: node tests/v160-desktop.mjs
       - name: Test complete file sync and offline access in packaged Windows apps
         run: node tests/sync-files-desktop.mjs --packaged
       - name: Test packaged Windows update, skipped versions and rollback

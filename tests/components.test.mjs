@@ -40,6 +40,7 @@ const { sectionsFor } = await import('../src/library-model.ts');
 const root = createRoot(document.body.appendChild(document.createElement('div')));
 const settle = () => new Promise(resolve => setTimeout(resolve, 20));
 async function action(fn) { await act(async () => { fn(); await settle(); }); }
+async function waitFor(selector){const deadline=performance.now()+5000;while(!document.querySelector(selector)&&performance.now()<deadline)await action(()=>{});assert(document.querySelector(selector),`Expected ${selector}`);}
 function button(name) { const result = [...document.querySelectorAll('button')].find(e => e.getAttribute('aria-label') === name || e.textContent.trim() === name); assert.ok(result, `button ${name}`); return result; }
 async function click(name) {
   const editor=name==='Save section'?document.querySelector('.section-editor'):document.querySelector('[role="dialog"]');
@@ -71,10 +72,10 @@ test('library home, folders, focused practice, progress, popup map and deletion 
     assert.equal(document.querySelector('.workspace'), null, 'home does not auto-open a player');
     await click('Create folder'); await value('Folder name', 'Current set'); await click('Save folder');
     assert.equal((await readLibrary()).folders[0].name, 'Current set');
-    await click('Edit Afterglow details'); await action(() => document.querySelector('.guitar-choices input:not(:checked)').click());
+    await click('Edit Afterglow details'); await waitFor('.guitar-choices input:not(:checked)'); await action(() => document.querySelector('.guitar-choices input:not(:checked)').click());
     await value('Song folder', (await readLibrary()).folders[0].id); await click('Save changes');
     await click('Open Afterglow');
-    for(let i=0;i<10 && document.querySelectorAll('.bar-overlay').length!==24;i++)await action(()=>{});
+    await waitFor('.workspace .bar-overlay');
     assert.ok(document.querySelector('.workspace')); assert.equal(document.querySelector('.library-home'), null);
     assert.equal(document.querySelectorAll('.bar-overlay').length, 24);
     assert.equal(TestHost.instances.at(-1).settings.display.barsPerRow, -1);

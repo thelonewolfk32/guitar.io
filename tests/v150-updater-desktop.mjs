@@ -43,7 +43,7 @@ for(const scenario of ['manual-and-force','skipped-versions','startup-rollback']
   const previous=await installer.asarVersion(path.join(installed,'resources/app.asar'));
   await button(p,'Help').click();await button(p,'Version and updates').click();await button(p,'Check for updates').waitFor({state:'visible'});
   await button(p,'Check for updates').click();await button(p,'Install update').waitFor({timeout:120000});assert.equal(await installer.asarVersion(path.join(installed,'resources/app.asar')),previous,'download alone must not replace the app');
-  await button(p,'Close dialog').click();assert.equal(await button(p,'Update ready').count(),1);assert.equal(await button(p,'Update ready').textContent(),'');
+  await button(p,'Close dialog').click();assert.equal(await button(p,'Update ready').count(),1);assert.equal(await button(p,'Update ready').textContent(),'!');
   if(scenario==='manual-and-force')await p.screenshot({path:path.join(root,'v150-download-icon.png')});
   if(scenario==='manual-and-force'){
    await button(p,'Open Synthetic study 000').click();await button(p,'Return to library').waitFor();await button(p,'Update ready').click();await button(p,'Install update').click();await p.getByText('Close the song player before installing.',{exact:true}).waitFor();await button(p,'Force install').click();await p.getByRole('dialog',{name:'Force install update?'}).waitFor();assert.match(await p.getByRole('dialog',{name:'Force install update?'}).textContent(),/Unsaved form changes/);await button(p,'Cancel').click();assert.equal(await installer.asarVersion(path.join(installed,'resources/app.asar')),previous);await button(p,'Force install').click();

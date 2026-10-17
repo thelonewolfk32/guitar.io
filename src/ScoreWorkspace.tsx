@@ -21,12 +21,20 @@ import Splicer from './Splicer';
 import SpeedControl from './SpeedControl';
 import {steppedRate} from './playback-timing';
 import {applyScoreColors} from './score-colors';
+import {account} from './account';
+import {featureAccess} from './plans';
+import {usage} from './usage';
+import {PracticeTimer} from './education';
+import {practice} from './practice';
 
 type Props = { song: Song; onPlayed?: (bar: number) => void; onSave: (song: Song, assets?: Asset[]) => Promise<void>; onEdit: () => void; onBack: () => void; notify: (text: string, error?: boolean) => void };
 type BarBox = { bar: number; x: number; y: number; width: number; height: number };
 type Draft = Section & { isNew?: boolean };
 
 export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack, notify }: Props) {
+  const [practiceTimer]=useState(()=>new PracticeTimer(seconds=>{void practice(song.id,'session',{seconds});}));
+  useEffect(()=>{const timer=setInterval(()=>practiceTimer.checkpoint(),15000);return()=>{clearInterval(timer);practiceTimer.setPlaying(false);};},[practiceTimer]);
+  useEffect(()=>{const pause=()=>api.current?.pause();window.addEventListener('guitario:pause',pause);return()=>window.removeEventListener('guitario:pause',pause);},[]);
   const scoreElement = useRef<HTMLDivElement>(null), transportElement=useRef<HTMLDivElement>(null);
   const sheetElement = useRef<HTMLDivElement>(null);
   const scrollElement = useRef<HTMLDivElement>(null);
@@ -38,6 +46,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
   const [mediaSource, setMediaSource] = useState<MediaSource>('synth'), [mediaAvailable, setMediaAvailable] = useState(true);
   const [youtubeSectionSpeeds,setYoutubeSectionSpeeds]=useState(false);
   const [spacing,setSpacing]=useState(1.25),[dark,setDark]=useState(()=>window.localStorage.getItem('guitario-dark-score')==='on');
+  const [sectionColours,setSectionColours]=useState(()=>window.localStorage.getItem('guitario-section-colours')!=='off');
   const sections = sectionsFor(song);
   const [ready, setReady] = useState(false);
   const [rendering, setRendering] = useState(true);
@@ -111,6 +120,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
       settings.core.includeNoteBounds = true;
       settings.display.scale = zoom;
       settings.display.staveProfile = mode === 'score' ? a.StaveProfile.Score : a.StaveProfile.Tab;
+      settings.notation.rhythmMode = a.TabRhythmMode.ShowWithBars;
       settings.display.barsPerRow = -1;
       settings.display.systemsLayoutMode = a.SystemsLayoutMode.Automatic;
       settings.display.stretchForce = spacing;
@@ -145,7 +155,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
         setBoxes(found); setRendering(false); setRenderRevision(n => n + 1);
       });
       instance.playerReady.on(() => { if (!disposed) { setReady(true); setMidiRevision(n => n + 1); } });
-      instance.playerStateChanged.on(e => { if (!disposed) { const playing=e.state === a.synth.PlayerState.Playing; if (playing || playbackState.current.playing) playbackState.current.onPlayed?.(playbackState.current.currentBar); playbackState.current.playing=playing; setPlaying(playing); } });
+      instance.playerStateChanged.on(e => { if (!disposed) { const playing=e.state === a.synth.PlayerState.Playing; if (playing || playbackState.current.playing) playbackState.current.onPlayed?.(playbackState.current.currentBar); playbackState.current.playing=playing;practiceTimer.setPlaying(playing); setPlaying(playing); } });
       instance.playedBeatChanged.on(beat => { if (!disposed) { const bar=beat.voice.bar.index+1; playbackState.current.currentBar=bar; queueMicrotask(()=>{if(!disposed)applyBarSpeed(bar);}); setCurrentBar(bar); } });
       instance.playerPositionChanged.on(e => {
         if (disposed) return;
@@ -356,7 +366,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
             <button className={"icon-button " + (settingsOpen ? "is-active" : "")} aria-label="Player settings" title="Player settings" aria-expanded={settingsOpen} onClick={() => setSettingsOpen(v => !v)}><Settings2 size={18} /></button>
             
           </div>
-          {settingsOpen && <div className="player-settings" aria-label="Player settings panel">
+          {settingsOpen && <div className="player-settings" aria-label="Player settings panel"><label className="section-colour-toggle"><input type="checkbox" checked={sectionColours} onChange={e=>{setSectionColours(e.target.checked);window.localStorage.setItem('guitario-section-colours',e.target.checked?'on':'off');window.dispatchEvent(new CustomEvent('guitario:display-preference',{detail:{sectionColours:e.target.checked}}));}}/>Section colours</label>
             <button className={"icon-button " + (countIn?"is-active":"")} aria-label="Count in" title="One bar count-in before MIDI playback" aria-pressed={countIn} disabled={mediaSource!=='synth'} onClick={()=>setCountIn(v=>!v)}><span className="count-in-icon">1·2·3·4</span></button><label>Instrument<select aria-label="Instrument track" value={song.trackIndex} onChange={e => onSave({ ...song, trackIndex: Number(e.target.value), tuning: song.tracks.find(t=>t.index===Number(e.target.value))?.tuning || song.tuning }).catch(err => notify(err.message, true))}>{song.tracks.map(t => <option key={t.index} value={t.index}>{t.name}</option>)}</select></label>
             <button className="icon-button" aria-label="Splicer" title="Splicer" onClick={()=>{api.current?.pause();setSpliceOpen(true);}}><Dna size={22}/></button>
             <label className="spacing-slider">Spacing<input aria-label="Notation spacing" type="range" min="1.25" max="2.5" step="0.01" value={spacing} onChange={e=>{const value=Number(e.target.value);setSpacing(value);if(api.current){api.current.settings.display.stretchForce=value;requestDisplayRender();}}}/><span className="spacing-labels"><span>Natural</span><span>Extra roomy</span></span></label>
@@ -369,7 +379,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
         <div className="score-paper" ref={scrollElement}>
           {loadError && <div className="score-error"><strong>This score couldn’t be opened</strong><p>{loadError}</p><p>Your imported file is still safely stored. Try a Guitar Pro or MusicXML export.</p></div>}
           {rendering && !loadError && <div className="loading-score">Preparing your score…</div>}
-          <div className="score-sheet" ref={sheetElement}><div ref={scoreElement} className="alpha-score" />
+          <div className={'score-sheet'+(sectionColours?'':' section-colours-off')} ref={sheetElement}><div ref={scoreElement} className="alpha-score" />
             {!rendering && boxes.map(box => {
               const section = sections.find(s => box.bar >= s.start && box.bar <= s.end);
               const isSelected = hasSelection && box.bar >= selection.start && box.bar <= selection.end;
@@ -387,7 +397,7 @@ export default function ScoreWorkspace({ song, onPlayed, onSave, onEdit, onBack,
 
       </div>
       <aside className="sections-panel" hidden={sectionsCollapsed}>
-        <div className="sections-heading"><h2>Song sections</h2><button className="icon-button" aria-label="Create section" title="Create section from selected bars" onClick={makeSection}><Plus size={19}/></button><button className="icon-button" aria-label="Song map" title="Song map" onClick={() => setMapOpen(true)}><Map size={18} /></button><button className="icon-button" aria-label="Suggest sections" title="Suggest sections" disabled={!score.current} onClick={() => setSuggestOpen(true)}><Sparkles size={17} /></button></div>
+        <div className="sections-heading"><h2>Song sections</h2><button className="icon-button" aria-label="Create section" title="Create section from selected bars" onClick={makeSection}><Plus size={19}/></button><button className="icon-button" aria-label="Song map" title="Song map" onClick={() => setMapOpen(true)}><Map size={18} /></button><button className="icon-button" aria-label="Suggest sections" title="Suggest sections" disabled={!score.current} onClick={() => {if(!featureAccess(account.entitlement).autoSections){notify('Premium includes automatic section suggestions.');return;}usage('auto_sections');setSuggestOpen(true);}}><Sparkles size={17} /></button></div>
         {draft?.isNew && sectionEditor}
         <div className="section-list">{sections.map((section, i) => <div className="section-group" key={section.id}>
           <div onContextMenu={e => openContext(e, section.start)} aria-current={activeSection?.id === section.id ? true : undefined} className={"section-card " + (activeSection?.id === section.id ? "active" : activeSection ? "upcoming" : "")} style={{ '--section-color': section.color } as CSSProperties}>

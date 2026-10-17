@@ -17,7 +17,7 @@ export function summarizeSong(song: Song): SongSummary {
   } catch { /* A legacy unsupported tuning keeps its visible label. */ }
   const stats = collectionProgress([song]);
   return {
-    summaryVersion: 1, songsterr: song.songsterr, id: song.id, title: song.title, artist: song.artist, album: song.album,
+    summaryVersion: 1, sharedLink:song.sharedLink,songsterr: song.songsterr, id: song.id, title: song.title, artist: song.artist, album: song.album,
     difficulty: song.difficulty, tuning: song.tuning, guitars: song.guitars || [], tags: song.tags || [],
     fileName: song.fileName, format: song.format, hash: song.hash, bars: song.bars, bpm: song.bpm,
     tracks: song.tracks || [], trackIndex: song.trackIndex, folderId: song.folderId,

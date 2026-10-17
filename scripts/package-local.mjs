@@ -33,7 +33,7 @@ for (const name of await fs.readdir(runtime)) {
 }
 await fs.cp(path.join(runtime, 'locales'), path.join(output, 'locales'), { recursive: true });
 for (const name of ['LICENSE.electron.txt', 'LICENSES.chromium.html']) {const source=await fs.access(path.join(runtime,name)).then(()=>name).catch(()=>name==='LICENSE.electron.txt'?'LICENSE':name);await fs.copyFile(path.join(runtime,source),path.join(output,name));}
-for (const name of ['README.md','START_HERE.txt','MACOS_BUILD.md','THIRD_PARTY_NOTICES.md',`CHANGELOG-v${config.version}.md`,`VALIDATION-v${config.version}.md`,'GITHUB_RELEASES.md','PERFORMANCE.md','PERFORMANCE.json','SYNC.md']) await fs.copyFile(path.join(project,name),path.join(output,name));
+for (const name of ['README.md','START_HERE.txt','MACOS_BUILD.md','THIRD_PARTY_NOTICES.md',`CHANGELOG-v${config.version}.md`,`VALIDATION-v${config.version}.md`,'GITHUB_RELEASES.md','PERFORMANCE.md','PERFORMANCE.json','SYNC.md','PC_SETUP.md','HOSTED_SERVICES.md','IOS_MONETISATION_HANDOFF.md','IOS_REACT_NATIVE_HANDOFF.md','OWNER_SETUP.md','PRIVACY.md','MONETISATION.md']) await fs.copyFile(path.join(project,name),path.join(output,name));
 if(!stage.startsWith(path.join(project,'release','app-')))throw new Error('Unexpected staging path.');
 await fs.rm(stage,{recursive:true,force:true});
 console.log(output);

@@ -1,0 +1,7 @@
+{
+  "provider": "https",
+  "repository": "thelonewolfk32/guitar.io",
+  "manifestUrl": "https://PROJECT.supabase.co/functions/v1/guitario?route=updates",
+  "publicKey": "PASTE ED25519 PUBLIC KEY PEM HERE",
+  "allowedDownloadOrigins": ["https://PROJECT.supabase.co"]
+}

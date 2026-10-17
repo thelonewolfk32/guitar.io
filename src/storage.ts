@@ -5,7 +5,7 @@ import { recordingsFor, withRecordings } from './recordings';
 import { correctTuningLabel } from './score-editing';
 import { mergeSyncRow, syncKey } from './sync-model';
 
-let database: Promise<IDBDatabase>;
+let database: Promise<IDBDatabase>|undefined;
 export const storageStores = ['songs', 'songSources', 'songIndex', 'settings', 'assets', 'assetRefs', 'changes', 'artworkThumbs', 'syncEntities', 'syncTransfers', 'syncTransferChunks'];
 const stores=storageStores;
 const sources = new Map<string, Uint8Array>(), pendingSources = new Map<string, Promise<Uint8Array | undefined>>();
@@ -35,9 +35,30 @@ function normalize(song: Song) {
 }
 function request<T>(q: IDBRequest<T>): Promise<T> { return new Promise((resolve, reject) => { q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error); }); }
 function complete(tx: IDBTransaction) { return new Promise<void>((resolve, reject) => { tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error || new Error('The library could not be saved. Export a backup before closing.')); }); }
+let libraryScope='';
+export function storageScope(){return libraryScope;}
+let writeGuard:((ids:string[],assets:Asset[])=>Promise<void>)|undefined;
+export function setWriteGuard(guard:typeof writeGuard){writeGuard=guard;}
+export async function switchStorageScope(scope:string){
+  if(scope===libraryScope)return;
+  if(scope&&!/^[a-f0-9-]{36}$/i.test(scope))throw Error('Invalid account scope.');
+  if(database)(await database).close();database=undefined;sources.clear();pendingSources.clear();libraryScope=scope;
+  await db();
+}
+export async function mergeGuestLibrary(){
+  if(!libraryScope)throw Error('Sign in before merging.');
+  const target=await db();if(await request(target.transaction('songIndex').objectStore('songIndex').count()))throw Error('Merge into a new account workspace using a backup to review duplicate songs.');
+  const guest=await new Promise<IDBDatabase>((resolve,reject)=>{const q=indexedDB.open('guitar-io-v1',4);q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
+  if(!guest.objectStoreNames.contains('songs')){guest.close();return;}
+  const entries:Record<string,{keys:IDBValidKey[];values:any[]}>= {};
+  for(const name of storageStores){const tx=guest.transaction(name),keys=tx.objectStore(name).getAllKeys(),values=tx.objectStore(name).getAll();const result=await Promise.all([request(keys),request(values)]);entries[name]={keys:result[0],values:result[1]};}
+  guest.close();const tx=target.transaction(storageStores,'readwrite'),finished=complete(tx);
+  for(const [name,data] of Object.entries(entries))for(let i=0;i<data.values.length;i++){if(name==='settings'&&/^(lan:|usage-|cloud-)/.test(String(data.keys[i])))continue;const store=tx.objectStore(name);if(store.keyPath)store.put(data.values[i]);else store.put(data.values[i],data.keys[i]);}
+  await finished;announce();
+}
 export function db() {
   if (!database) database = new Promise((resolve, reject) => {
-    const q = indexedDB.open('guitar-io-v1', 4);
+    const q = indexedDB.open(libraryScope?'guitar-io-v1-account-'+libraryScope:'guitar-io-v1', 4);
     q.onupgradeneeded = event => {
       const d = q.result, tx = q.transaction!;
       for (const name of ['songs', 'assets', 'songSources', 'songIndex', 'artworkThumbs']) if (!d.objectStoreNames.contains(name)) d.createObjectStore(name, { keyPath: 'id' });
@@ -102,7 +123,7 @@ async function readSource(id: string): Promise<Uint8Array | undefined> {
 export async function readSong(id: string): Promise<Song | undefined> {
   const d = await db(); storageMetrics.detailReads++;
   const [details, source] = await Promise.all([request(d.transaction('songs').objectStore('songs').get(id)), readSource(id)]);
-  if(details && !source)throw new Error('The tab is not cached here yet. Connect an awake paired device on the same Wi-Fi or LAN to download it.');
+  if(details && !source)throw new Error('The GP file has not finished downloading. Open Sync to check cloud transfers, or connect the source device to finish uploading it.');
   return details && source ? { ...details, source } : undefined;
 }
 /** Full read is reserved for explicit backup export and legacy callers. */
@@ -167,6 +188,7 @@ function writeIndex(tx: IDBTransaction, deviceId: string, old: SongSummary | und
 function progressState(song: Song): SongSummary['progressState'] { const stats = collectionProgress([song]); return stats.mastered ? 'mastered' : stats.progress ? 'progress' : 'explore'; }
 
 export async function saveSongs(songs: Song[], seeded = false, assets: Asset[] = [], folders?: Folder[], guitars?: GuitarProfile[]): Promise<Song[]> {
+  try{await writeGuard?.(songs.map(s=>s.id),assets);}catch(error){const d=await db();const existing=await request(d.transaction('songIndex').objectStore('songIndex').getAllKeys());const tx=d.transaction('settings','readwrite'),finished=complete(tx);for(const song of songs)if(!existing.includes(song.id))tx.objectStore('settings').put({id:song.id,song,assets},'draft:'+song.id);await finished;throw error;}
   const thumbs = await Promise.all(assets.map(async a => ({id:a.id,blob:a.kind==='artwork'?await thumbnail(a.blob):undefined})));
   const d = await db(), tx = d.transaction(stores, 'readwrite'), done = complete(tx), now = await syncNow(tx), deviceId = await request(tx.objectStore('settings').get('deviceId')), saved: Song[] = [];
   try {
@@ -204,8 +226,27 @@ export async function saveSongs(songs: Song[], seeded = false, assets: Asset[] =
   cleanRemovedAssets(tx,deviceId,now);await done; for (const song of saved) remember(song.id, song.source);announce(); return saved;
 }
 type IndexPatch = Partial<Pick<Song, 'title' | 'artist' | 'album' | 'difficulty' | 'folderId' | 'guitars' | 'tags' | 'collectionArt' | 'artworkAssetId' | 'lastOpenedAt' | 'lastPlayedAt' | 'lastPlayedBar'>>;
+/** Remove a profile and its manual song associations atomically; keep all scores. */
+export async function removeGuitar(id:string,name:string):Promise<void>{
+  const d=await db(),tx=d.transaction(stores,'readwrite'),done=complete(tx),now=await syncNow(tx),deviceId=await request(tx.objectStore('settings').get('deviceId'));
+  try{
+    const profiles:GuitarProfile[]=await request(tx.objectStore('settings').get('guitars')) || [],profile=profiles.find(g=>g.id===id),removedName=profile?.name || name;
+    if(profile){tx.objectStore('settings').put(profiles.filter(g=>g.id!==id),'guitars');journal(tx,deviceId,'guitar',id,profile as unknown as Record<string,unknown>,undefined,now);updateRefs(tx,deviceId,`guitar:${id}`,profile.artworkAssetId?[profile.artworkAssetId]:[],[],now);}
+    const indexes:SongSummary[]=await request(tx.objectStore('songIndex').getAll());
+    for(const index of indexes){
+      if(!index.guitars.includes(removedName)&&!index.collectionArt?.['Guitars:'+removedName])continue;
+      const old=await request(tx.objectStore('songs').get(index.id));if(!old)continue;
+      const collectionArt={...old.collectionArt};delete collectionArt['Guitars:'+removedName];
+      const guitars=old.guitars.filter((g:string)=>g!==removedName),fields=['guitars','collectionArt'],details={...old,guitars,collectionArt,updatedAt:now,fieldUpdatedAt:{...old.fieldUpdatedAt,...Object.fromEntries(fields.map(f=>[f,now]))}},next={...index,guitars,collectionArt,updatedAt:now,assetIds:assetIds(details)};
+      tx.objectStore('songs').put(details);writeIndex(tx,deviceId,index,next,now);journal(tx,deviceId,'song',index.id,old,details,now);
+    }
+    cleanRemovedAssets(tx,deviceId,now);
+  }catch(error){tx.abort();await done.catch(()=>{});throw error;}
+  await done;announce();
+}
 /** Metadata/activity updates never load or rewrite original tab bytes. */
 export async function patchSongs(patches: { id: string; patch: IndexPatch }[]): Promise<SongSummary[]> {
+  await writeGuard?.(patches.map(p=>p.id),[]);
   const d = await db(), tx = d.transaction(stores, 'readwrite'), done = complete(tx), now = await syncNow(tx), result: SongSummary[] = [], deviceId = await request(tx.objectStore('settings').get('deviceId'));
   try { for (const { id, patch } of patches) {
     const [old, index] = await Promise.all([request(tx.objectStore('songs').get(id)), request(tx.objectStore('songIndex').get(id))]); if (!old || !index) continue;

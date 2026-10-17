@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","include":["admin/src","src/account.ts","src/plans.ts","src/service-config.ts"]}

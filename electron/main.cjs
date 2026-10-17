@@ -37,6 +37,12 @@ app.whenReady().then(() => {
     quit:()=>app.quit()
   }});
   const updatesReady=updates.load();
+  ipcMain.handle('account:open-external',async(event,value)=>{requireApp(event);const url=new URL(value);if(url.protocol!=='https:'||!['checkout.stripe.com','billing.stripe.com'].includes(url.hostname)||url.username||url.password)throw Error('Invalid billing link.');await shell.openExternal(url.href);});
+  const accountSessionFile=path.join(app.getPath('userData'),'account-session.bin'),secureStorage=require('electron').safeStorage;
+  let accountSessionWrites=Promise.resolve();
+  ipcMain.handle('account:load-session',async event=>{requireApp(event);if(!secureStorage.isEncryptionAvailable())return;await accountSessionWrites;try{return secureStorage.decryptString(await require('node:fs/promises').readFile(accountSessionFile));}catch{return;}});
+  ipcMain.handle('account:save-session',async(event,value)=>{requireApp(event);if(typeof value!=='string'||Buffer.byteLength(value)>32768)throw Error('Invalid account session.');if(!secureStorage.isEncryptionAvailable())throw Error('Secure account storage is unavailable.');accountSessionWrites=accountSessionWrites.catch(()=>{}).then(async()=>{const fs=require('node:fs/promises'),temp=accountSessionFile+'.tmp';await fs.writeFile(temp,secureStorage.encryptString(value));await fs.rename(temp,accountSessionFile);});await accountSessionWrites;});
+  ipcMain.handle('account:clear-session',async event=>{requireApp(event);accountSessionWrites=accountSessionWrites.catch(()=>{}).then(()=>require('node:fs/promises').rm(accountSessionFile,{force:true}));await accountSessionWrites;});
   ipcMain.handle('updates:status',async event=>{requireApp(event);await updatesReady;return updates.status();});
   ipcMain.handle('updates:check',async event=>{requireApp(event);await updatesReady;return updates.check();});
   ipcMain.handle('updates:settings',async(event,value)=>{requireApp(event);await updatesReady;return updates.settings(value);});
@@ -66,8 +72,11 @@ app.whenReady().then(() => {
     if(!Number.isFinite(applied) || applied<.25 || applied>2)throw new Error('YouTube fine speed is unavailable.');
     return applied;
   });
+  let learnScope='';
+  const scopeId=value=>typeof value==='string'&&/^[a-f0-9-]{36}$/i.test(value)?value:'';
   const songId = id => typeof id === 'string' && id.length <= 200 ? id : '';
-  ipcMain.handle('learn:open', (event,id) => {
+  ipcMain.handle('learn:open', (event,id,scope) => {
+    const requestedScope=scopeId(scope);if(learnWindow&&!learnWindow.isDestroyed()&&learnScope!==requestedScope){learnWindow.close();learnWindow=undefined;}learnScope=requestedScope;
     requireApp(event);
     if (learnWindow && !learnWindow.isDestroyed()) { learnWindow.webContents.send('learn:context',songId(id)); if (learnWindow.isMinimized()) learnWindow.restore(); learnWindow.focus(); return; }
     learnWindow = new BrowserWindow({ width:1280, height:920, minWidth:850, minHeight:650, parent:mainWindow, backgroundColor:'#161d1a', title:'Learn · Guitar.io', autoHideMenuBar:true,
@@ -75,9 +84,9 @@ app.whenReady().then(() => {
     learnWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
     learnWindow.webContents.on('will-navigate',(e,url)=>{if(!url.startsWith('guitario://app/')) e.preventDefault();});
     learnWindow.on('closed',()=>{learnWindow=undefined;});
-    learnWindow.loadURL('guitario://app/?learn=1&song='+encodeURIComponent(songId(id)));
+    learnWindow.loadURL('guitario://app/?learn=1&song='+encodeURIComponent(songId(id))+'&scope='+encodeURIComponent(learnScope));
   });
-  ipcMain.on('learn:update',(event,id)=> { try { requireApp(event); if(learnWindow && !learnWindow.isDestroyed()) learnWindow.webContents.send('learn:context',songId(id)); } catch {} });
+  ipcMain.on('learn:update',(event,id,scope)=> { try { requireApp(event);if(learnWindow&&!learnWindow.isDestroyed()&&learnScope!==scopeId(scope)){learnWindow.close();learnWindow=undefined;return;} if(learnWindow && !learnWindow.isDestroyed()) learnWindow.webContents.send('learn:context',songId(id)); } catch {} });
   const root = path.resolve(__dirname, '../dist');
   protocol.handle('guitario', (request) => {
     const url = new URL(request.url);

@@ -1,0 +1,37 @@
+name: React Native source and iOS build
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix mobile --ignore-scripts
+      - run: npm run typecheck && npm run admin:typecheck && npm run mobile:typecheck
+      - run: npm run assets && npm run mobile:prepare
+      - run: bundle install
+        working-directory: mobile
+      - run: bundle exec ruby scripts/configure-ios.rb
+        working-directory: mobile
+      - run: bundle exec pod install
+        working-directory: mobile/ios
+      - name: Compile iOS and Share Extension without signing
+        run: xcodebuild -workspace GuitarIO.xcworkspace -scheme GuitarIO -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
+        working-directory: mobile/ios

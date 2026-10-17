@@ -12,7 +12,7 @@ export function mergeSyncRow(previous:SyncRow|undefined,incoming:SyncChange & {v
   // V1.3 journals also contain derived song timestamps. They are rebuilt from
   // field clocks; do not send these old cache fields as independently edited data.
   if(incoming.entity==='song')incoming={...incoming,patch:Object.fromEntries(Object.entries(incoming.patch || {}).filter(([key])=>!['updatedAt','fieldUpdatedAt'].includes(key))),mapPatches:Object.fromEntries(Object.entries(incoming.mapPatches || {}).filter(([key])=>key!=='fieldUpdatedAt'))};
-  const result:SyncRow=structuredClone(previous || {key:syncKey(incoming.entity,incoming.entityId),entity:incoming.entity,entityId:incoming.entityId,deviceId:incoming.deviceId,timestamp:incoming.timestamp,operation:'upsert',fields:[],patch:{},mapPatches:{},revision:0,versions:{}});
+  const result:SyncRow=(typeof structuredClone==='function'?structuredClone:(value:any)=>JSON.parse(JSON.stringify(value)))(previous || {key:syncKey(incoming.entity,incoming.entityId),entity:incoming.entity,entityId:incoming.entityId,deviceId:incoming.deviceId,timestamp:incoming.timestamp,operation:'upsert',fields:[],patch:{},mapPatches:{},revision:0,versions:{}});
   let changed=false;
   const stamp=(key:string):Stamp=>incoming.versions?.[key] || {timestamp:incoming.timestamp,deviceId:incoming.deviceId,sequence:incoming.revision || revision,revision};
   const put=(key:string,write:()=>void)=>{const version=stamp(key);if(compareStamp(version,result.versions[key])>0){write();result.versions[key]={...version,revision};changed=true;}};

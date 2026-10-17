@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Check, Plus, X, Camera } from 'lucide-react';
+import { Check, Plus, X, Camera, Trash2 } from 'lucide-react';
 import type { GuitarProfile, Asset } from './types';
 import { Modal, useAssetUrl } from './ui';
 import { baseTuning, tuningName } from './tunings';
 import TuningPicker from './TuningPicker';
 
 export const newGuitar = (name = ''): GuitarProfile => ({ id: crypto.randomUUID(), name, make: '', model: '', material: '', stringGauge: '', notes: '', kind: 'guitar', strings: 6, tunings: [] });
-export default function GuitarEditor({ guitar, addTuning=false, onSave, onClose }: { guitar: GuitarProfile; addTuning?:boolean; onSave: (g: GuitarProfile, assets?: Asset[]) => Promise<void>; onClose: () => void }) {
+export default function GuitarEditor({ guitar, addTuning=false, onSave, onDelete, onClose }: { guitar: GuitarProfile; addTuning?:boolean; onSave: (g: GuitarProfile, assets?: Asset[]) => Promise<void>; onDelete?:()=>Promise<void>; onClose: () => void }) {
   const [draft, setDraft] = useState(guitar), [pitches, setPitches] = useState(baseTuning(guitar.strings, guitar.kind === 'bass'));
   const [adding, setAdding] = useState(addTuning), [busy, setBusy] = useState(false), [error, setError] = useState('');
   const [artwork, setArtwork] = useState<Asset | null>(null), [preview, setPreview] = useState('');
+  const [confirmDelete,setConfirmDelete]=useState(false);
   const savedPhoto = useAssetUrl(guitar.artworkAssetId);
   useEffect(() => { if (!artwork) return; const url = URL.createObjectURL(artwork.blob); setPreview(url); return () => URL.revokeObjectURL(url); }, [artwork]);
   function configure(kind: GuitarProfile['kind'], strings: number) {
@@ -25,5 +26,6 @@ export default function GuitarEditor({ guitar, addTuning=false, onSave, onClose 
     </div>
     {error && <p className="form-error" role="alert">{error}</p>}
     <div className="modal-actions"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>Cancel</button><button className="button primary" disabled={busy || adding}><Check size={15} />Save guitar</button></div>
+    {onDelete && (confirmDelete?<div className="delete-confirm" role="group" aria-label="Confirm guitar deletion"><p>Delete {guitar.name}? Songs and their files stay in your library.</p><button type="button" className="button secondary" disabled={busy} onClick={()=>setConfirmDelete(false)}>Keep guitar</button><button type="button" className="button danger-button" disabled={busy} onClick={async()=>{setBusy(true);setError('');try{await onDelete();onClose();}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}}}><Trash2 size={15}/>Delete guitar</button></div>:<button type="button" className="text-button danger delete-section" disabled={busy} onClick={()=>setConfirmDelete(true)}><Trash2 size={15}/>Delete guitar</button>)}
   </form></Modal>;
 }

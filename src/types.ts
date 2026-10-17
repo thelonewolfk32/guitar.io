@@ -1,3 +1,4 @@
+import type {SharedSongLink} from './share-model';
 import type * as AlphaTab from '@coderline/alphatab';
 
 declare global { interface Window { alphaTab: typeof AlphaTab; } }
@@ -24,6 +25,7 @@ export type AnnotationPosition = { x: number; y: number };
 export type SpliceEdit = {track:number;staff:number;start:number;end:number;dataBase64:string;createdAt:string};
 export type ScoreAnnotation = { id: string; track: number; bar: number; noteKey?: string; text: string; color: string; free?: boolean };
 export type Song = {
+  sharedLink?:SharedSongLink;
   id: string;
   title: string;
   artist: string;
@@ -69,7 +71,7 @@ export type Song = {
   fieldUpdatedAt?: Record<string, string>;
 };
 /** No original bytes, notation edits, sections, annotations or recording payloads. */
-export type SongSummary = Pick<Song, 'songsterr' | 'id' | 'title' | 'artist' | 'album' | 'difficulty' | 'tuning' | 'guitars' | 'tags' | 'fileName' | 'format' | 'hash' | 'bars' | 'bpm' | 'tracks' | 'trackIndex' | 'folderId' | 'artworkAssetId' | 'collectionArt' | 'demo' | 'createdAt' | 'updatedAt' | 'lastOpenedAt' | 'lastPlayedAt' | 'lastPlayedBar' | 'tuningBuckets'> & {
+export type SongSummary = Pick<Song, 'sharedLink' | 'songsterr' | 'id' | 'title' | 'artist' | 'album' | 'difficulty' | 'tuning' | 'guitars' | 'tags' | 'fileName' | 'format' | 'hash' | 'bars' | 'bpm' | 'tracks' | 'trackIndex' | 'folderId' | 'artworkAssetId' | 'collectionArt' | 'demo' | 'createdAt' | 'updatedAt' | 'lastOpenedAt' | 'lastPlayedAt' | 'lastPlayedBar' | 'tuningBuckets'> & {
   summaryVersion: 1;
   progress: number;
   progressState: 'explore' | 'progress' | 'mastered';

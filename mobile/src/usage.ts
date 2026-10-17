@@ -1,0 +1,6 @@
+import type {NativeRepository} from './repository';import {mobileAccount as account} from './api';
+const queues=new WeakMap<NativeRepository,Promise<unknown>>();
+function exclusive<T>(repo:NativeRepository,task:()=>Promise<T>):Promise<T>{const result=(queues.get(repo)||Promise.resolve()).then(task);queues.set(repo,result.catch(()=>{}));return result;}
+export function recordUsage(repo:NativeRepository,event:string){return exclusive(repo,async()=>{if(!await repo.setting('usage-consent'))return;if(!['score_open','manual_import','share_capture','auto_sections','sync_complete','learn_open','feedback_sent'].includes(event))return;const batch=await repo.setting('usage-outbox')||{batchId:crypto.randomUUID(),counts:{}};batch.counts[event]=Math.min(100,(batch.counts[event]||0)+1);await repo.set('usage-outbox',batch);});}
+export function setUsage(repo:NativeRepository,enabled:boolean){return exclusive(repo,async()=>{if(!enabled){await repo.set('usage-consent',false);await repo.set('usage-outbox',null);}await account.request('usage-consent',{enabled});await repo.set('usage-consent',enabled);});}
+export function flushUsage(repo:NativeRepository){return exclusive(repo,async()=>{if(!await repo.setting('usage-consent'))return;const batch=await repo.setting('usage-outbox');if(batch){await account.request('usage',batch);await repo.set('usage-outbox',null);}});}

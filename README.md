@@ -1,32 +1,44 @@
 # Guitar.io
 
-A local guitar library and practice player for Windows and Apple Silicon Mac. Import Guitar Pro or Songsterr tabs, organise songs and guitars, track section progress, practise with MIDI or YouTube, and splice parts into a learning arrangement.
+A guitar library and practice player for Windows and Apple Silicon Mac, with a React Native iPhone application under development.
 
-**Current version: 1.5.1.** Download checked desktop builds from [Releases](https://github.com/thelonewolfk32/guitar.io/releases/latest).
+**V1.6.0 is a local test candidate.** The last published desktop release is V1.5.1. See [changes](CHANGELOG-v1.6.0.md) and [actual validation](VALIDATION-v1.6.0.md) before testing. No hosted backend or live purchases are configured in this package.
 
-V1.5.1 downloads all missing GP/audio/artwork during sync, repairs older metadata-only songs, condenses Help and labels Learn (beta). See [the sync-fix handover](SYNC_FIX_HANDOFF.md) and [changes](CHANGELOG-v1.5.1.md).
+## V1.6 model
 
-- [Download Windows and Mac](https://github.com/thelonewolfk32/guitar.io/releases/latest)
-- [First-time GitHub and publishing guide](GITHUB_RELEASES.md)
-- [V1.5.0 changes](CHANGELOG-v1.5.0.md)
-- [Local sync](SYNC.md)
-- [Mac preparation](MACOS_BUILD.md)
-- [V1.5 Mac/iPhone and AI coding handover](IOS_HANDOFF.md)
+Cloud and local sync are free. Free accounts save five songs or shared links, with 150 MiB cloud storage. Premium adds unlimited song count within 1 GiB, automatic section suggestions, synchronised YouTube playback, online metadata/GP discovery and additional beta features, at AUD $5/month or $50/year. Files are at most 30 MiB. There are no advertisements.
 
-Windows: extract the ZIP and open `Guitar.io.exe` inside its folder.
+Existing entries survive a downgrade: choose active songs in Account & plans; archived songs remain exportable and count towards additions. Manual GP import/editing, manual sections and Learn (beta) remain free. GP discovery opens source pages so users can choose an arrangement and supply their file.
 
-Mac: extract the ARM64 ZIP, run `Prepare and open Guitar.io.command` once, then open `Guitar.io.app`. These are local test builds without an Apple Developer certificate or notarization.
+V1.6 includes complete-file sync, account-isolated libraries, pending shared links, persistent import drafts, rhythm notation, a section-colour switch, guitar deletion, quiet Learn, an update ! indicator, feedback and opt-in aggregate usage. Owner administration supports independently audited gifts and allowances. Education models prepare for later teacher permissions and assignments.
 
-Open **Help (?) → version number** for **Check for updates** and **Auto-updater OFF/ON**. Launch always checks for a newer release and shows a light-green download icon at the top right. Manual checks download and verify; click **Install update** when ready. Automatic updates download on launch and install when the library is idle. Close open views normally or use **Force install** after its unsaved-changes warning. Active saves/imports finish first; sync drains and saved data is committed before exit. Windows retains rollback until the library and a visible window open. Personal libraries stay in separate app data. Mac signs in the background; preparation failures keep the app open and record `update-install.log`.
+## Test and setup
 
-Local workspace layout: open `Guitar.io.exe` directly in the main project folder. The active source stays under `development/guitar-io`; generated packages are under its `release/artifacts`. Old release copies are available through Git history and GitHub Releases. Keep the main folder intact when using the updater.
+Windows: extract the full Windows ZIP and open Guitar.io.exe. Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app. Mac packages require local preparation and have not been notarised.
 
-Enable Device sync on both computers and pair with the six-digit code. Wi-Fi and Ethernet can share a LAN. Your songs, artwork and progress stay in private app data and sync separately from application updates.
+Application updates and personal library sync are separate. Help (?) → version number opens update controls. A ! appears when a newer published release is available. The existing GitHub updater remains configured; signed private Supabase update feeds are prepared as an alternative.
 
-Build from source with Node.js 24: run npm ci, npm test and npm run build in development/guitar-io. The GitHub workflow packages Windows and Mac; a matching version tag publishes the release after checks. See GITHUB_RELEASES.md for the publishing steps and THIRD_PARTY_NOTICES.md for licenses. No iOS build is included.
+- [Programs and accounts to prepare](PC_SETUP.md)
+- [Supabase staging and payments](HOSTED_SERVICES.md)
+- [Owner dashboard setup](OWNER_SETUP.md)
+- [Replacement React Native / Xcode handoff](IOS_REACT_NATIVE_HANDOFF.md)
+- [Privacy and remaining launch requirements](PRIVACY.md)
+- [Release and private updater guide](GITHUB_RELEASES.md)
+- [Local sync](SYNC.md), [Mac desktop preparation](MACOS_BUILD.md)
 
-## Continue on a Mac or develop the iPhone version
+From a source clone root with Node 24:
 
-Clone this repository on the Mac and open its root in your coding tool; a GitHub clone already contains `package.json` at the top level. Read [IOS_HANDOFF.md](IOS_HANDOFF.md) for Xcode/Codex/Claude/Cursor connections, GitHub authentication, current-source refresh, free Personal Team installation and Windows/Mac/iPhone sync checks. [AGENTS.md](AGENTS.md) gives coding tools the project context automatically where supported.
+```sh
+npm ci
+npm test
+npm run build
+npm run admin:typecheck
+npm run admin:build
+npm ci --prefix mobile
+npm run mobile:typecheck
+npm run mobile:prepare
+```
 
-The iOS project exists but still needs native compilation and device testing. From the clone root, use `npm ci`, `npm run ios:sync` and `npm run ios:open` on the Mac before running it in Xcode. GitHub carries source and desktop app updates; your personal library arrives through LAN sync. Use V1.5.1 source for the complete-file sync fix.
+Use the React Native handoff for CocoaPods, Xcode, App Groups, legacy-library migration, sound, sharing and purchase tests. Keep the original Capacitor project for recovery; the new Apple app is under mobile. Native signing and physical-iPhone acceptance require a Mac and device.
+
+Source repository: [thelonewolfk32/guitar.io](https://github.com/thelonewolfk32/guitar.io). Desktop downloads: [published releases](https://github.com/thelonewolfk32/guitar.io/releases/latest). Published tags and archives are immutable. Personal profiles, credentials and generated dependencies must stay out of source control.

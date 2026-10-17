@@ -5,10 +5,15 @@ $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $config = Get-Content -LiteralPath (Join-Path $projectRoot 'package.json') -Raw | ConvertFrom-Json
 $outputRoot = if ($env:GUITARIO_OUTPUT_DIR) { [System.IO.Path]::GetFullPath($env:GUITARIO_OUTPUT_DIR) } else { [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'release/artifacts')) }
 $archivePath = Join-Path $outputRoot "Guitar-io-$($config.version)-Source.zip"
-$directories = @('.github', 'dist', 'electron', 'public', 'scripts', 'src', 'tests', 'shared', 'ios')
-$rootFiles = @('.gitignore', '.gitattributes', 'AGENTS.md', 'Build-Windows.cmd', "CHANGELOG-v$($config.version).md", "VALIDATION-v$($config.version).md", 'PERFORMANCE.md', 'PERFORMANCE.json', 'SYNC.md', 'IOS_HANDOFF.md', 'MACOS_BUILD.md', 'CODEX_CURRENT_HANDOFF.md', 'SYNC_FIX_HANDOFF.md', 'MONETISATION.md', 'capacitor.config.ts', 'index.html', 'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'README.md', 'START_HERE.txt', 'THIRD_PARTY_NOTICES.md', 'tsconfig.json', 'vite.config.ts', 'GITHUB_RELEASES.md')
+$directories = @('.github', 'dist', 'electron', 'public', 'scripts', 'src', 'tests', 'shared', 'ios', 'supabase', 'mobile', 'admin')
+$rootFiles = @('.gitignore', '.gitattributes', 'AGENTS.md', 'Build-Windows.cmd', "CHANGELOG-v$($config.version).md", "VALIDATION-v$($config.version).md", 'PERFORMANCE.md', 'PERFORMANCE.json', 'SYNC.md', 'IOS_HANDOFF.md', 'MACOS_BUILD.md', 'CODEX_CURRENT_HANDOFF.md', 'SYNC_FIX_HANDOFF.md', 'MONETISATION.md', 'PC_SETUP.md', 'HOSTED_SERVICES.md', 'IOS_MONETISATION_HANDOFF.md', 'IOS_REACT_NATIVE_HANDOFF.md', 'OWNER_SETUP.md', 'PRIVACY.md', 'tsconfig.admin.json', '.env.example', 'capacitor.config.ts', 'index.html', 'package.json', 'package-lock.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'README.md', 'START_HERE.txt', 'THIRD_PARTY_NOTICES.md', 'tsconfig.json', 'vite.config.ts', 'GITHUB_RELEASES.md')
 $files = @($rootFiles | ForEach-Object { Get-Item -LiteralPath (Join-Path $projectRoot $_) -Force })
-foreach ($directory in $directories) { $files += Get-ChildItem -LiteralPath (Join-Path $projectRoot $directory) -Recurse -File -Force }
+foreach ($directory in $directories) {
+    $candidates = Get-ChildItem -LiteralPath (Join-Path $projectRoot $directory) -Recurse -File -Force
+    if ($directory -eq 'supabase') { $candidates = $candidates | Where-Object { ($_.Extension -in '.ts', '.sql', '.toml' -or $_.Name -eq '.env.example') -and $_.FullName -notmatch '[\\/](\.temp|\.branches)[\\/]' } }
+    $candidates = $candidates | Where-Object { $_.FullName.Replace([char]92,[char]47) -notmatch '/(node_modules|Pods|build|ScoreWeb|score-assets|xcuserdata|DerivedData|GuitarIO.xcworkspace)/' -and $_.Name -notin '.env.local','main.jsbundle','.xcode.env.local' }
+    $files += $candidates
+}
 # Create mode intentionally refuses to replace an earlier source archive.
 $archive = [System.IO.Compression.ZipFile]::Open($archivePath, [System.IO.Compression.ZipArchiveMode]::Create)
 try {

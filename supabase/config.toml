@@ -1,0 +1,4 @@
+project_id = "guitar-io"
+[functions.guitario]
+verify_jwt = false
+# The handler validates user tokens and billing webhook signatures itself.

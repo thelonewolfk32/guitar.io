@@ -23,6 +23,7 @@ async function harness(autoUpdate,fn){
  try{await act(async()=>{root.render(React.createElement(View));await tick(20);});await fn({calls,live,get hook(){return hook;},change:s=>{state={...state,...s};changes(state);}});}finally{await act(()=>root.unmount());host.remove();delete window.guitarUpdates;}
 }
 test('launch checks with auto-updater OFF; manual check downloads then waits for Install update',()=>harness(false,async ctx=>{
+ assert.equal(document.querySelector('.update-alert-badge')?.textContent,'!');
  assert.equal(ctx.calls.check,1);assert.equal(ctx.calls.prepare,0);assert(document.querySelector('button[aria-label="Update ready"]'));
  await act(async()=>ctx.hook.check());assert.equal(ctx.calls.prepare,1);assert.equal(ctx.calls.install.length,0);assert(document.body.textContent.includes('Install update'));
  ctx.live.player=true;await act(async()=>ctx.hook.install());assert.equal(ctx.calls.install.length,0);assert(document.body.textContent.includes('Close the song player'));

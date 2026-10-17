@@ -40,7 +40,7 @@ export async function syncPage(after=0,limit=100){
   return {rows:page,cursor,head:Number(head)||0,more:cursor<(Number(head)||0)};
 }
 const maps=new Set(['spliceEdits','noteEdits','tempoEdits','tuningEdits','sourceTunings','tuningCompensation','tuningNoteCompensation','annotationPositions']);
-const songFields=new Set(['id','title','artist','album','difficulty','tuning','guitars','tags','fileName','format','hash','bars','bpm','tracks','trackIndex','schemaVersion','folderId','artworkAssetId','collectionArt','artworkSource','demo','createdAt','lastOpenedAt','lastPlayedAt','lastPlayedBar','songsterr','spliceUndo']);
+const songFields=new Set(['id','sharedLink','title','artist','album','difficulty','tuning','guitars','tags','fileName','format','hash','bars','bpm','tracks','trackIndex','schemaVersion','folderId','artworkAssetId','collectionArt','artworkSource','demo','createdAt','lastOpenedAt','lastPlayedAt','lastPlayedBar','songsterr','spliceUndo']);
 function assign(target:Record<string,unknown>,patch:Record<string,unknown>){for(const [key,value] of Object.entries(patch)){if(['__proto__','constructor','prototype'].includes(key))throw new Error('Unsafe sync field.');if(value===null)delete target[key];else target[key]=value;}}
 function materialize(row:SyncRow){const result:Record<string,unknown>={};assign(result,row.patch || {});for(const [name,values] of Object.entries(row.mapPatches || {})){if(!maps.has(name))throw new Error('Unsupported edit map.');const map:Record<string,unknown>={};assign(map,values);result[name]=map;}return result;}
 function requireMeta(row:SyncRow,data:Record<string,unknown>){
@@ -84,7 +84,10 @@ async function discardTransfer(key:string){
   const d=await db(),tx=d.transaction(['syncTransfers','syncTransferChunks'],'readwrite'),p=done(tx);removeTransfer(tx,key);await p;
 }
 /** Merge, queue missing bytes and checkpoint atomically. */
+let incomingGuard:((rows:SyncRow[])=>Promise<void>)|undefined;
+export function setIncomingGuard(guard:typeof incomingGuard){incomingGuard=guard;}
 export async function applySyncPage(input:unknown,checkpoint?:{peer:string;cursor:number}){
+  if(!checkpoint?.peer.startsWith('cloud:'))await incomingGuard?.(validateSyncRows(input));
   const incoming=validateSyncRows(input),d=await db(),tx=d.transaction(storageStores,'readwrite'),p=done(tx),affected=new Set<string>();let accepted=0;
   let current:SyncRow|undefined;
   try{

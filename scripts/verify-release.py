@@ -17,6 +17,7 @@ for line in (workspace / f'Guitar-io-{version}-SHA256SUMS.txt').read_text().spli
     with zipfile.ZipFile(file) as archive:
         assert archive.testzip() is None, file
         assert not any('/test-results/' in n or '/node_modules/' in n or '/release/' in n or '/xcuserdata/' in n for n in archive.namelist())
+        assert not any(n.rsplit('/', 1)[-1] in ('.env', '.env.local', 'update-private.pem', 'server-signing-secret.txt') for n in archive.namelist())
     print('SHA256 and CRC verified:', file.name)
 with zipfile.ZipFile(workspace / f'Guitar-io-{version}-macOS-arm64.zip') as mac, zipfile.ZipFile(workspace / f'Guitar-io-{version}-Windows-x64.zip') as win:
     asar = win.read(f'Guitar-io-{version}-Windows-x64/resources/app.asar')
@@ -26,6 +27,6 @@ with zipfile.ZipFile(workspace / f'Guitar-io-{version}-macOS-arm64.zip') as mac,
     item = header['files']['package.json']; start = 8+header_size+int(item['offset'])
     assert json.loads(asar[start:start+item['size']])['version'] == version
 with zipfile.ZipFile(workspace / f'Guitar-io-{version}-Source.zip') as source:
-    for name in ['package.json','src/sync-model.ts','src/sync-storage.ts','src/lan-sync.ts','IOS_HANDOFF.md','ios/App/App/GuitarLocalPlugin.swift','ios/App/App.xcodeproj/project.pbxproj']:
+    for name in ['package.json','src/sync-model.ts','mobile/App.tsx','mobile/package-lock.json','admin/src/main.tsx','IOS_REACT_NATIVE_HANDOFF.md','supabase/migrations/202610170001_free_cloud.sql','src/sync-storage.ts','src/lan-sync.ts','IOS_HANDOFF.md','ios/App/App/GuitarLocalPlugin.swift','ios/App/App.xcodeproj/project.pbxproj']:
         assert source.read('guitar-io/'+name) == (root / name).read_bytes(), name
 print('Desktop ASAR match and current source verified.')

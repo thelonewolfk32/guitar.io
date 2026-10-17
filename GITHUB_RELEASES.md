@@ -2,7 +2,7 @@
 
 Repository: https://github.com/thelonewolfk32/guitar.io
 
-V1.5.0 is already published. Keep its tag and assets unchanged; the version/tag examples below illustrate the process and must not be used to publish a second V1.5.0. See [IOS_HANDOFF.md](IOS_HANDOFF.md) for continuing from that baseline on the Mac, connecting a coding tool to Xcode/GitHub and installing an iPhone test through Xcode. Native iOS is not part of the desktop ZIP updater or current release workflow.
+V1.5.1 is already published. Keep all published tags and assets unchanged; the version/tag examples below illustrate the process and must not be used to publish a second V1.5.0. See [IOS_REACT_NATIVE_HANDOFF.md](IOS_REACT_NATIVE_HANDOFF.md) for continuing from that baseline on the Mac, connecting a coding tool to Xcode/GitHub and installing an iPhone test through Xcode. Native iOS is not part of the desktop ZIP updater or current release workflow.
 
 ## What goes where
 
@@ -53,23 +53,23 @@ Do not replace published ZIPs with different code under the same version. Ship a
 
 `.github/workflows/release.yml` runs tests and packages both desktops and a source ZIP on pushes to `main`. Download the completed run's **Artifacts** from the Actions tab to test a candidate. Mac archives use the official verified ARM64 runtime. Native Apple Silicon jobs on macOS 15 and 26 test bundled Electron staging, signing, replacement, invalid entitlements and cleanup before tagged publication. Interactive MacBook playback, relaunch and Gatekeeper still need a user-session test.
 
-For version 1.5.1 (use a new version for later releases):
+For the local 1.6.0 candidate, deploy and validate Supabase staging first. The user has requested local preparation while no project exists; source and CI can be shared for review without publishing a stable release. When ready:
 
 1. Pull `main`, make changes, then run in the source folder:
 
    ```sh
-   npm version 1.5.1 --no-git-tag-version
+   npm version 1.6.0 --no-git-tag-version
    npm test
    npm run build
    ```
 
-2. Add `CHANGELOG-v1.5.1.md` and `VALIDATION-v1.5.1.md`. Record changes and actual test results; the packages include these documents.
+2. Add `CHANGELOG-v1.6.0.md` and `VALIDATION-v1.6.0.md`. Record changes and actual test results; the packages include these documents.
 3. Commit the source, version/lock files and documents to `main`, then push.
 4. After checking the `main` workflow is green, create and push the tag:
 
    ```sh
-   git tag v1.5.1
-   git push origin v1.5.1
+   git tag v1.6.0
+   git push origin v1.6.0
    ```
 
 5. The tag workflow checks that the version matches `package.json`, builds both ZIPs, uploads them to a draft release, and publishes the complete release after successful checks.
@@ -113,7 +113,7 @@ Official references: [GitHub Releases](https://docs.github.com/en/repositories/r
 
 ## Hosting updates privately
 
-GitHub is only the current update feed and download host. A private HTTPS service can provide a version manifest and Windows/Mac archives instead. For this app, replace the GitHub release lookup and download URL validation in `electron/update-service.cjs`, while preserving the existing installer, profile preservation, version checks and rollback. Installed clients need one migration release through their current feed before they can use a new service.
+GitHub is only the current update feed and download host. A private HTTPS service can provide a version manifest and Windows/Mac archives instead. The V1.5.2 candidate already supports signed HTTPS manifests through `electron/update-feed.cjs`; configure `electron/update-config.json` using its HTTPS example after staging tests. The existing installer, profile preservation, version checks and rollback are retained. Installed clients need one migration release through their current feed before they can use a new service.
 
 For paid distribution, use per-user authentication and short-lived download URLs backed by private storage, such as S3 and CloudFront. Keep signing keys on the publishing server; verify signed update metadata and archive integrity in the app. Do not embed a shared GitHub token or server credential in distributed applications. A private source repository alone does not make a download service work for installed clients. Native iOS distribution remains separate through Apple's installation channels.
 

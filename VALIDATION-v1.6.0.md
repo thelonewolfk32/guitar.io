@@ -3,7 +3,7 @@
 Status: local setup/test candidate. No Supabase project or live billing deployment exists. Native device acceptance remains pending.
 
 ## Passed locally on Windows
-- 175 regression tests, zero failures (Node 24.19.0). This includes embedded PostgreSQL migrations, atomic simultaneous song reservations, free cloud access, quotas, downgrade retention, grant expiry/revocation, RLS/tenant isolation, owner MFA rejection, sharing identities, offline drafts and account workspaces.
+- 176 regression tests, zero failures (Node 24.19.0). This includes embedded PostgreSQL migrations, atomic simultaneous song reservations, free cloud access, quotas, downgrade retention, grant expiry/revocation, RLS/tenant isolation, owner MFA rejection, sharing identities, offline drafts, account workspaces and cancellation of in-flight downloads before an account switch.
 - Desktop, backend, owner dashboard and React Native TypeScript checks.
 - Desktop and owner production builds; React Native iOS Metro JavaScript bundle and bundled score asset generation.
 - Packaged Windows UI: guitar deletion/cancel preserves original scores, OS-encrypted sessions, AUD pricing, update !, narrow header, quiet Learn (beta).
@@ -15,7 +15,7 @@ Status: local setup/test candidate. No Supabase project or live billing deployme
 - Owner browser fixture: login/MFA session, account selection, gifts/allowances with a reason, suspension/restoration, independent revocation, feedback and aggregate counts.
 
 ## Verified remotely on GitHub
-The unsigned React Native app and Share Extension compiled successfully on macOS 26.6.2 / Xcode 26.6 with the iOS Simulator 26.5 SDK (arm64), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Mac CI job](https://github.com/thelonewolfk32/guitar.io/actions/runs/39018382116/job/117355065615). This verifies the native build configuration; physical-device results remain separate. Later source changes include CSS, quota tests and usage batching; consult the latest PR checks for their reruns.
+The unsigned React Native app and Share Extension compiled successfully on macOS 26.6.2 / Xcode 26.6 with the iOS Simulator 26.5 SDK (arm64), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Mac CI job](https://github.com/thelonewolfk32/guitar.io/actions/runs/39018382116/job/117355065615). This verifies the native build configuration; physical-device results remain separate. Consult the latest PR checks for current-source reruns.
 
 ## Artifacts
 The local package scripts produce Guitar-io-1.6.0-Windows-x64.zip, Guitar-io-1.6.0-macOS-arm64.zip and Guitar-io-1.6.0-Source.zip, plus Guitar-io-1.6.0-SHA256SUMS.txt. Run scripts/verify-release.py to verify SHA-256, ZIP CRCs, matching desktop ASARs and current source. Mac archive construction on Windows does not establish native Mac execution/signing.

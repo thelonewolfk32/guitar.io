@@ -5,7 +5,7 @@ This handoff supersedes the older Capacitor, paid-cloud and advertising directio
 
 User decisions: cloud sync free; five saved songs including pending links; 150 MiB Free / 1 GiB Premium / 30 MiB per new file; AUD 5 monthly / 50 yearly; no ads; basic Learn free; automatic sections, synchronised YouTube and online enrichment/GP discovery Premium. Downgrades preserve files and require active-song selection. Teacher tools stop at foundations.
 
-Windows-verified: desktop and mobile TypeScript, Metro iOS JS bundle, owner build, shared/backend PostgreSQL checks, GP duration preservation and browser execution of the actual bundled score bridge. See VALIDATION-v1.6.0.md for final counts/results. Native compilation/signing/device behaviour is pending unless CI results later record otherwise. The first CI build found an empty Share Extension product name; configure-ios.rb now sets the product names explicitly.
+Windows-verified: desktop and mobile TypeScript, Metro iOS JS bundle, owner build, shared/backend PostgreSQL checks, GP duration preservation and browser execution of the actual bundled score bridge. See VALIDATION-v1.6.0.md for final counts/results. The unsigned app and Share Extension compiled successfully on the GitHub Mac runner. Signing and device behaviour remain pending. configure-ios.rb sets both product names explicitly.
 
 ## Pinned source
 - Node used locally: 24.19.0; project Node 24.
@@ -13,7 +13,9 @@ Windows-verified: desktop and mobile TypeScript, Metro iOS JS bundle, owner buil
 - alphaTab 1.8.4; react-native-webview 14.0.1.
 - OP-SQLite 18.2.5; react-native-file-access 4.0.4; react-native-keychain 10.0.0.
 - RevenueCat react-native-purchases 10.14.0; documents picker 12.0.2.
-- Gemfile: Ruby 3.3+, CocoaPods 1.17.0, xcodeproj 1.28.1. These Ruby/native versions are preparation targets, not locally compiled Mac results.
+- Gemfile: Ruby 3.3+, CocoaPods 1.17.0, xcodeproj 1.28.1. These versions were verified by the remote Mac setup/build; no Mac runs locally on this Windows PC.
+- Remote CI setup/unsigned compile verified: macOS 26.6.2, Xcode 26.6 (iOS Simulator SDK 26.5), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Successful Mac job](https://github.com/thelonewolfk32/guitar.io/actions/runs/39018382116/job/117355065615). This is a simulator build, not a signed device result.
+- Original app icon copied from the existing Apple project.
 - Bundle ID `io.guitario.mobile`; scheme GuitarIO; App Group `group.io.guitario.mobile`; Share Extension `io.guitario.mobile.share`.
 
 ## Mac setup and build

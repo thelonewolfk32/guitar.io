@@ -14,6 +14,9 @@ Status: local setup/test candidate. No Supabase project or live billing deployme
 - GP quarter/dotted/eighth/sixteenth notes, rests, ties and tuplets survive editing/export. Tab, Notation and Both render without changing durations.
 - Owner browser fixture: login/MFA session, account selection, gifts/allowances with a reason, suspension/restoration, independent revocation, feedback and aggregate counts.
 
+## Verified remotely on GitHub
+The unsigned React Native app and Share Extension compiled successfully on macOS 26.6.2 / Xcode 26.6 with the iOS Simulator 26.5 SDK (arm64), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Mac CI job](https://github.com/thelonewolfk32/guitar.io/actions/runs/39018382116/job/117355065615). This verifies the native build configuration; physical-device results remain separate. Later source changes include CSS, quota tests and usage batching; consult the latest PR checks for their reruns.
+
 ## Artifacts
 The local package scripts produce Guitar-io-1.6.0-Windows-x64.zip, Guitar-io-1.6.0-macOS-arm64.zip and Guitar-io-1.6.0-Source.zip, plus Guitar-io-1.6.0-SHA256SUMS.txt. Run scripts/verify-release.py to verify SHA-256, ZIP CRCs, matching desktop ASARs and current source. Mac archive construction on Windows does not establish native Mac execution/signing.
 
@@ -21,7 +24,7 @@ The local package scripts produce Guitar-io-1.6.0-Windows-x64.zip, Guitar-io-1.6
 - Supabase staging deployment, two real accounts/devices, bucket policies, hosted failures and account switching.
 - Stripe/RevenueCat sandbox purchase, restore, cancellation, expiry and cross-provider subscription checks; live payments remain disabled.
 - Real provider metadata/Brave requests and all three provider app share workflows.
-- Xcode/Swift compile, signing, App Groups, legacy-library migration, native SQLite/files/LAN, audible speaker/headphone MIDI and purchases on a physical iPhone. Mac desktop user-session/Gatekeeper checks.
+- Signed builds on the owner's Mac, App Groups provisioning, legacy-library migration, native SQLite/files/LAN, audible speaker/headphone MIDI and purchases on a physical iPhone. Mac desktop user-session/Gatekeeper checks.
 - TestFlight/App Store submission, published privacy policy/account-deletion lifecycle and orphan-storage cleanup before public launch.
 
 GitHub workflows are prepared for desktop packages/Mac updater and an unsigned iOS simulator compile. Consult their actual results; source presence or a Metro bundle is not an iOS compilation result. Stable V1.6 publication is deferred until staging acceptance.

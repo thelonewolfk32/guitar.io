@@ -19,7 +19,7 @@ Migrations install account-wide song reservations, free-cloud/storage rules, ind
 
 Supabase injects SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY into its function runtime. Do not include reserved SUPABASE_ names in the secrets file. Set ALLOWED_ORIGINS to the exact desktop/browser/admin origins, including your Pages address. Native requests still require verified access tokens. Public client builds use VITE_ACCOUNTS_ENABLED=true, VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Billing activation is independent: keep MONETISATION_ENABLED=false until purchase validation passes.
 
-Cloud data is private, scoped to the verified Supabase user. Free storage is 150 MiB, Premium 1 GiB, new files 30 MiB. Downgrades preserve stored bytes. Explicit deletions release logical quota; old hash-addressed objects need storage cleanup before a public launch.
+Cloud data is private, scoped to the verified Supabase user. Free storage is 150 MiB, Premium 1 GiB, new files 30 MiB. Downgrades preserve stored bytes. Storage insertion checks its actual/probed byte size against the reservation; test this with the hosted Storage API during staging. Explicit deletions release logical quota; old hash-addressed objects need storage cleanup before a public launch.
 
 ## 2. Desktop billing
 Create AUD 5/month and AUD 50/year recurring Stripe prices. Configure STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_PRO_YEARLY_PRICE_ID and BILLING_RETURN_URL.

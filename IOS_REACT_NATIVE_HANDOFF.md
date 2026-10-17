@@ -5,7 +5,7 @@ This handoff supersedes the older Capacitor, paid-cloud and advertising directio
 
 User decisions: cloud sync free; five saved songs including pending links; 150 MiB Free / 1 GiB Premium / 30 MiB per new file; AUD 5 monthly / 50 yearly; no ads; basic Learn free; automatic sections, synchronised YouTube and online enrichment/GP discovery Premium. Downgrades preserve files and require active-song selection. Teacher tools stop at foundations.
 
-Windows-verified: desktop and mobile TypeScript, Metro iOS JS bundle, owner build, shared/backend PostgreSQL checks, GP duration preservation and browser execution of the actual bundled score bridge. See VALIDATION-v1.6.0.md for final counts/results. Native compilation/signing/device behaviour is pending unless CI results later record otherwise.
+Windows-verified: desktop and mobile TypeScript, Metro iOS JS bundle, owner build, shared/backend PostgreSQL checks, GP duration preservation and browser execution of the actual bundled score bridge. See VALIDATION-v1.6.0.md for final counts/results. Native compilation/signing/device behaviour is pending unless CI results later record otherwise. The first CI build found an empty Share Extension product name; configure-ios.rb now sets the product names explicitly.
 
 ## Pinned source
 - Node used locally: 24.19.0; project Node 24.
@@ -37,7 +37,7 @@ The Ruby script is idempotent and adds native bridge sources, score resources, a
 
 Unsigned simulator build:
 ```sh
-xcodebuild -workspace GuitarIO.xcworkspace -scheme GuitarIO -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+xcodebuild -workspace GuitarIO.xcworkspace -scheme GuitarIO -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
 ```
 The GitHub mobile workflow performs these preparation/build checks on macOS. A simulator compile does not validate App Groups, purchased entitlements or physical-device sound.
 

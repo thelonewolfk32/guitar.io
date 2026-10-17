@@ -17,7 +17,7 @@ Verify the linked reference before db push. Never reset a hosted database.
 
 Migrations install account-wide song reservations, free-cloud/storage rules, independent billing/owner grants, MFA-protected owner workflows, feedback, private practice records, anonymous aggregate counters and education foundations. All app tables are private by default; authenticated clients do not write entitlements directly.
 
-Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the server. Set ALLOWED_ORIGINS to the exact desktop/browser/admin origins, including your Pages address. Native requests still require verified access tokens. Public client builds use VITE_ACCOUNTS_ENABLED=true, VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Billing activation is independent: keep MONETISATION_ENABLED=false until purchase validation passes.
+Supabase injects SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY into its function runtime. Do not include reserved SUPABASE_ names in the secrets file. Set ALLOWED_ORIGINS to the exact desktop/browser/admin origins, including your Pages address. Native requests still require verified access tokens. Public client builds use VITE_ACCOUNTS_ENABLED=true, VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Billing activation is independent: keep MONETISATION_ENABLED=false until purchase validation passes.
 
 Cloud data is private, scoped to the verified Supabase user. Free storage is 150 MiB, Premium 1 GiB, new files 30 MiB. Downgrades preserve stored bytes. Explicit deletions release logical quota; old hash-addressed objects need storage cleanup before a public launch.
 
@@ -47,3 +47,5 @@ Feature analytics are opt-in aggregate counts. Practice/progress data is private
 The existing signed HTTPS update-feed implementation remains available. Use `npm run updates:keys` and the update preparation script in a private workspace. Store UPDATE_SIGNING_PRIVATE_KEY only server-side and ship only the public verification key/origin allowlist. Use a Supabase plan whose file-size setting accommodates both platform ZIPs. Test signature/digest validation and rollback before switching the production feed.
 
 Provider references: [Apple multiplatform services](https://developer.apple.com/app-store/review/guidelines/#other-purchase-methods), [Spotify February 2026 access changes](https://developer.spotify.com/documentation/web-api/references/changes/february-2026), [Supabase upload limits](https://supabase.com/docs/guides/storage/uploads/file-limits).
+
+Environment reference: [Supabase injected variables and secrets](https://supabase.com/docs/guides/functions/secrets). The disposable Docker stack is for API/database checks; packaged account clients use an HTTPS Supabase project for full application acceptance.

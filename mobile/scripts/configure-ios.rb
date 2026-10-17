@@ -26,6 +26,7 @@ embed.add_file_reference(extension.product_reference,true).settings={'ATTRIBUTES
 team=ENV['APPLE_TEAM_ID']
 [app,extension].each do |target|
  target.build_configurations.each do |config|
+  config.build_settings['PRODUCT_NAME']=target.name
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER']=target==app ? 'io.guitario.mobile' : 'io.guitario.mobile.share'
   config.build_settings['CODE_SIGN_ENTITLEMENTS']='GuitarIO/GuitarIO.entitlements'
   config.build_settings['SWIFT_VERSION']='5.0'

@@ -51,7 +51,7 @@ app.whenReady().then(() => {
   ipcMain.handle('updates:settings',async(event,value)=>{requireApp(event);await updatesReady;return updates.settings(value);});
   ipcMain.handle('updates:prepare-download',async event=>{requireApp(event);await updatesReady;return updates.prepare();});
   ipcMain.handle('updates:install',async(event,options)=>{requireApp(event);if(options!==undefined&&(typeof options!=='object'||options===null||typeof options.force!=='boolean'))throw Error('Invalid installation request.');await updatesReady;return updates.install({force:options?.force===true});});
-  ipcMain.handle('updates:activated',async event=>{requireApp(event);await updatesReady;mainWindow.show();await updates.activate();});
+  ipcMain.handle('updates:activated',async event=>{requireApp(event);await updatesReady;mainWindow.show();await updates.activateWhenAvailable();});
   const {LanService}=require('./lan-bundle.cjs');
   const pendingLan=new Map();let lanSequence=0;
   lan=new LanService((payload,deviceId)=>new Promise((resolve,reject)=>{if(!mainWindow||mainWindow.isDestroyed())return reject(new Error('Open Guitar.io to sync.'));const id=++lanSequence,timer=setTimeout(()=>{pendingLan.delete(id);reject(new Error('Library did not respond.'));},20000);pendingLan.set(id,{resolve,reject,timer});mainWindow.webContents.send('lan:incoming',id,payload,deviceId);}));

@@ -27,10 +27,27 @@ class UpdateService{
   status(){return {...this.config,...this.result,currentVersion:this.currentVersion,platform:this.platform,arch:this.arch,autoInstallPaused:!!this.failedInstall};}
   async activate(){
     const file=path.join(path.dirname(this.file),'update-result.json'),outcome=await fs.readFile(file,'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);
-    if(outcome?.status!=='installed'||outcome.version!==this.currentVersion||outcome.activated)return;
+    if(outcome?.status!=='installed'||outcome.version!==this.currentVersion)return false;
+    if(outcome.activated)return true;
     outcome.activated=true;outcome.pid=process.pid;this.failedInstall=false;
     const temp=file+'.activation.tmp';await fs.writeFile(temp,JSON.stringify(outcome));await fs.rename(temp,file);
     if(this.platform==='darwin'&&/^[a-f0-9-]{36}$/.test(outcome.rollbackToken || '')&&this.installer){const parent=path.dirname(path.resolve(path.dirname(this.installer.execPath),'../..')),backup=path.join(parent,`.Guitar.io-rollback-${outcome.rollbackToken}.app`);if(!(await fs.lstat(backup).catch(()=>undefined))?.isSymbolicLink())await require('./update-installer.cjs').removeStage(parent,backup).catch(()=>{});}
+    return true;
+  }
+  // Legacy installers launch first and write their result afterward. The
+  // renderer-ready acknowledgement must survive that ordering without treating
+  // a normal metadata read as proof that a replacement app loaded successfully.
+  async activateWhenAvailable({attempts=80,interval=250}={}){
+    if(this.activationPending)return this.activationPending;
+    this.activationPending=(async()=>{
+      const staged=(await fs.readdir(path.join(path.dirname(this.file),'app-updates')).catch(()=>[])).length>0;
+      for(let attempt=0;attempt<attempts;attempt++){
+        let transient=false;
+        try{if(await this.activate())return true;}catch(error){if(!['EPERM','EACCES','EBUSY','ENOENT'].includes(error.code))throw error;transient=true;}
+        if(attempt===0&&!staged&&!transient)return false;
+        if(attempt+1<attempts)await new Promise(resolve=>setTimeout(resolve,interval));
+      }return false;
+    })().finally(()=>{this.activationPending=undefined;});return this.activationPending;
   }
   async persist(){this.writing=(this.writing || Promise.resolve()).catch(()=>{}).then(async()=>{await fs.mkdir(path.dirname(this.file),{recursive:true});const temp=this.file+'.tmp';await fs.writeFile(temp,JSON.stringify({...this.config,cache:this.cache}),'utf8');await fs.rename(temp,this.file);});await this.writing;}
   async settings(value){if(typeof value?.autoUpdate!=='boolean'&&typeof value?.checkOnLaunch!=='boolean')throw Error('Invalid update preference.');this.config.autoUpdate=value.autoUpdate ?? value.checkOnLaunch;this.config.checkOnLaunch=this.config.autoUpdate;await this.persist();this.onChange(this.status());return this.status();}

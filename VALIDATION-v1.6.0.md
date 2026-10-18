@@ -1,30 +1,48 @@
-# V1.6 validation — 17 October 2026
+# V1.6 validation — 18 October 2026
 
-Status: local setup/test candidate. No Supabase project or live billing deployment exists. Native device acceptance remains pending.
+Status: iOS-first local setup/source candidate. No Supabase project, live billing, signing, TestFlight or physical-iPhone acceptance exists yet. The stable desktop Release remains unpublished.
 
-## Passed locally on Windows
-- 176 regression tests, zero failures (Node 24.19.0). This includes embedded PostgreSQL migrations, atomic simultaneous song reservations, free cloud access, quotas, downgrade retention, grant expiry/revocation, RLS/tenant isolation, owner MFA rejection, sharing identities, offline drafts, account workspaces and cancellation of in-flight downloads before an account switch.
-- Desktop, backend, owner dashboard and React Native TypeScript checks.
-- Desktop and owner production builds; React Native iOS Metro JavaScript bundle and bundled score asset generation.
-- Packaged Windows UI: guitar deletion/cancel preserves original scores, OS-encrypted sessions, AUD pricing, update !, narrow header, quiet Learn (beta).
-- Packaged V1.6 UI: choose five active entries after downgrade, archived opening blocked, persistent section colours, free automatic-sections restriction, over-limit GP retained as an exportable/retryable draft.
-- Two packaged Windows instances: encrypted LAN sync transfers actual GP/artwork/audio, multi-chunk audio, no-change reuse, metadata-only repair, restart and offline score access.
-- Actual Windows updater: download/install separation, force confirmation, skipped-version install from V1.4.4, visible relaunch, startup failure rollback, original library and unrelated files retained.
-- Bundled score WebView bridge in headless Edge: GP inspection, ordered binary chunks, checksum verification, render, colours and capability checks. Visually inspected notation stems/beams and the owner UI.
-- GP quarter/dotted/eighth/sixteenth notes, rests, ties and tuplets survive editing/export. Tab, Notation and Both render without changing durations.
-- Owner browser fixture: login/MFA session, account selection, gifts/allowances with a reason, suspension/restoration, independent revocation, feedback and aggregate counts.
+## Exact source and native CI
 
-## Verified remotely on GitHub
-The unsigned React Native app and Share Extension compiled successfully on macOS 26.6.2 / Xcode 26.6 with the iOS Simulator 26.5 SDK (arm64), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Mac CI job](https://github.com/thelonewolfk32/guitar.io/actions/runs/39018382116/job/117355065615). This verifies the native build configuration; physical-device results remain separate. Consult the latest PR checks for current-source reruns.
+Branch: `codex/v1.6-free-cloud-react-native`, draft PR #1.
 
-## Artifacts
-The local package scripts produce Guitar-io-1.6.0-Windows-x64.zip, Guitar-io-1.6.0-macOS-arm64.zip and Guitar-io-1.6.0-Source.zip, plus Guitar-io-1.6.0-SHA256SUMS.txt. Run scripts/verify-release.py to verify SHA-256, ZIP CRCs, matching desktop ASARs and current source. Mac archive construction on Windows does not establish native Mac execution/signing.
+- iOS application source tested at `64a7169f70a9ec3e29c6be28dfeb3c5b77140ec4`: **local and full profiles both passed** unsigned arm64 simulator compilation, CocoaPods, mobile typecheck and idempotent local→full→local configuration tests. [iOS run 15](https://github.com/thelonewolfk32/guitar.io/actions/runs/39112172460).
+- Windows checks below use the same `64a7169f70a9ec3e29c6be28dfeb3c5b77140ec4` implementation commit. [Desktop/package CI](https://github.com/thelonewolfk32/guitar.io/actions/runs/39112172439) also passed, including actual Windows updater checks and native Mac updater/local-signing smoke tests on macOS 15 and 26; the release/publish job was skipped. Documentation-only commits may follow.
+- Recorded Mac toolchain: macOS 26.6.2 (25G83), Xcode 26.6 (17F113), iOS Simulator SDK 26.5, Node 24.21.0, Ruby 3.3.12, Bundler 2.5.22, CocoaPods 1.17.0, xcodeproj 1.28.1. The workflow prints tool versions. These are CI versions, not an asserted home-Mac setup.
+- Native GoogleSignIn 10.0.0 uses modular GoogleUtilities 8.1.5 and RecaptchaInterop 101.0.0 for React Native static-library integration. QuickCrypto 1.1.8 / Nitro Modules 0.37.1 compile in both profiles.
+
+An unsigned simulator success proves compilation. It does not prove Personal Team provisioning, App Groups, Google/Apple provider setup, retained iPhone data, sound output or purchases.
+
+## Current Windows verification
+
+Node 24.19.0, isolated synthetic fixtures; no personal library/profile was copied.
+
+- **190 regression tests, zero failures.** Existing sync, notation, quotas, RLS, grants, education/analytics and updater tests remain included.
+- New tests exercise exact/PKCE auth callbacks, recent AMR authentication, signout before SDK hydration, one-time legacy Keychain adoption, independent guest/account WebKit extraction without schema upgrades, and distinct native sharing constants/methods.
+- Real source/attachment bytes stream through native backup export/restore. Corruption, truncation and missing references fail before metadata commit. Native migration uses actual repository code with SQLite/file adapters: an injected mid-transaction failure rolls back, retry preserves GP bytes, device ID, clocks, artwork and learned-section status, and the original source remains intact.
+- PostgreSQL lifecycle tests cover leases, seven-day grace, archived reference protection, cleanup/reservation locking, owner/deletion authorisation, post-downgrade retention and bulk import rollback after a later page exceeds quota.
+- Recovery-point fixtures verify hash/size checks, manifest-last publication, deduplication and 30-point selection. These are not a hosted database/R2 restore drill.
+- Desktop, backend, owner/admin and React Native typechecks pass. Desktop/admin production builds, bundled offline score assets and the final Metro iOS JS bundle pass.
+- Browser fixtures pass against the owner login/MFA/allowance/status/revocation/feedback/aggregate/operational-alert flows and the actual bundled score bridge (real GP inspect/chunks/hash/render/colour switch/free capability gate).
+- A newly packaged isolated Windows build passes **actual download/install/force confirmation, direct V1.4.4-installer→V1.6 skipped-version restart, and startup failure rollback**. All preserve library cards, unrelated files, preferences and an OS-visible restart. A discovered legacy launch-before-result race is corrected by bounded/coalesced renderer-ready acknowledgement, including transient file-lock retries. The timing and lock cases have dedicated regression tests.
+
+The previous V1.6 candidate also passed packaged guitar deletion/cancel/encrypted sessions/quiet Learn/update badge, archive selection/section controls, complete two-instance LAN GP/artwork/audio sync and offline restart, and musical-duration/rendering fixtures. Current desktop packaging CI reruns those checks. Desktop distribution remains a later release gate.
+
+## Source kit and release artifacts
+
+`scripts/package-ios.py` produces a commit-named **React Native source ZIP**, not an IPA, under `release/ios-first`. It includes the Xcode handoff, release gates and cloud recovery runbook, verifies ZIP CRCs and required source files, and excludes generated dependencies, personal libraries and signing/settings secrets. Prepare assets/Pods on the Mac as documented.
+
+Existing local desktop candidate archives can predate this iOS-first revision. Do not upload those stale candidates. At release gate 7 use clean successful CI artifacts for the reviewed commit, verify checksums and both platform ASARs/source, then publish through the existing updater workflow. No stable tag/Release was created here.
 
 ## Pending external acceptance
-- Supabase staging deployment, two real accounts/devices, bucket policies, hosted failures and account switching.
-- Stripe/RevenueCat sandbox purchase, restore, cancellation, expiry and cross-provider subscription checks; live payments remain disabled.
-- Real provider metadata/Brave requests and all three provider app share workflows.
-- Signed builds on the owner's Mac, App Groups provisioning, legacy-library migration, native SQLite/files/LAN, audible speaker/headphone MIDI and purchases on a physical iPhone. Mac desktop user-session/Gatekeeper checks.
-- TestFlight/App Store submission, published privacy policy/account-deletion lifecycle and orphan-storage cleanup before public launch.
 
-GitHub workflows are prepared for desktop packages/Mac updater and an unsigned iOS simulator compile. Consult their actual results; source presence or a Metro bundle is not an iOS compilation result. Stable V1.6 publication is deferred until staging acceptance.
+- Personal Team signing continuity and full pre-install legacy JSON/container backup; physical-phone in-place migration, interrupted migration, restoration, speaker/headphone MIDI, airplane mode, score display and resume.
+- Free Sydney staging deployment, SMTP/redirect/provider configuration and MFA owner; actual-byte direct Storage requests, simultaneous quota/import tests, two real accounts/devices, complete GP/artwork/audio, restart/offline access and account switching.
+- Google/Apple/email linking and recovery, all three native Share Extension sources, cancellation, full libraries and wrong/unavailable GP matches on real devices.
+- Account deletion with recent credentials, linked-provider revocation, deferred/failed cleanup and deleted-user suppression in a real restore.
+- Separate Pro production, private R2 scheduler/credentials, a successful database-and-original-file restore drill, monitoring thresholds and provider billing reconciliation.
+- Full Apple capabilities, internal TestFlight and nongifted RevenueCat/Stripe sandbox purchase/restore/expiry/cancellation/duplicate prevention; no live charging is enabled.
+- Published privacy/support pages and accurate App Store disclosures; feedback attachment consent and analytics opt-out on devices.
+- App Store submission, then production desktop social login, Mac signing/Gatekeeper and final stable updater release.
+
+Use IOS_REACT_NATIVE_HANDOFF.md, HOSTED_SERVICES.md, CLOUD_OPERATIONS.md and IOS_FIRST_RELEASE.md. Pending evidence never means passed. Staging users/credentials/grants are not copied to production.

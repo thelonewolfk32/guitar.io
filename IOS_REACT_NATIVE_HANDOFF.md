@@ -7,18 +7,18 @@ User decisions: cloud sync free; five saved songs including pending links; 150 M
 
 Start with the owner's iPhone using **free Personal Team signing**. Only after its migration/playback gate passes should staging and the paid Apple capabilities follow. See IOS_FIRST_RELEASE.md for the required order.
 
-Windows checks and Mac CI are recorded separately in VALIDATION-v1.6.0.md. The preceding source commit `6a6287b` compiled on the Mac runner. New profiles/native authentication dependencies must pass their own CI; previous success is not evidence for changed native code. No signing, physical-device sound or hosted deployment has been claimed.
+Windows checks and Mac CI are recorded separately in VALIDATION-v1.6.0.md. The preceding source commit `6a6287b` compiled on the Mac runner. Both new profiles/native authentication dependencies passed their own unsigned CI at 64a7169; previous results are never substituted for changed native code. No signed iPhone build, physical-device sound or hosted deployment has been claimed.
 
 ## Pinned source
-- Repository: https://github.com/thelonewolfk32/guitar.io; branch `codex/v1.6-free-cloud-react-native` (draft PR #1). iOS-first implementation starts at `fc6caa8c8d2484df46a8fc5ea138e84d04219a98`; use the latest tested commit recorded in VALIDATION-v1.6.0.md, not the old desktop download.
+- Repository: https://github.com/thelonewolfk32/guitar.io; branch `codex/v1.6-free-cloud-react-native` (draft PR #1). Implementation source `64a7169f70a9ec3e29c6be28dfeb3c5b77140ec4` passed both native profiles and desktop/package/updater CI. Documentation-only commits can follow. Use VALIDATION-v1.6.0.md and the commit-named source kit, not an older desktop download.
 - Node used locally: 24.19.0; project Node 24.
 - React Native 0.88.0 / React 19.3.0.
 - alphaTab 1.8.4; react-native-webview 14.0.1.
 - OP-SQLite 18.2.5; react-native-file-access 4.0.4; react-native-keychain 10.0.0.
 - RevenueCat react-native-purchases 10.14.0; documents picker 12.0.2.
 - Supabase JS 2.118.0; native GoogleSignIn CocoaPod 10.0.0. Native QuickCrypto 1.1.8, Nitro Modules 0.37.1 and UTF-8/URL support initialise before the account SDK, so PKCE uses SHA-256 in Hermes.
-- Gemfile: Ruby 3.3+, CocoaPods 1.17.0, xcodeproj 1.28.1. These versions were verified by the remote Mac setup/build; no Mac runs locally on this Windows PC.
-- Remote CI setup/unsigned compile verified: macOS 26.6.2, Xcode 26.6 (iOS Simulator SDK 26.5), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Successful Mac job](https://github.com/thelonewolfk32/guitar.io/actions/runs/39018382116/job/117355065615). This is a simulator build, not a signed device result.
+- Gemfile: Ruby 3.3+, CocoaPods 1.17.0, xcodeproj 1.28.1. These versions, with Bundler 2.5.22, were verified by the remote Mac setup/build; no Mac runs locally on this Windows PC.
+- Remote CI setup/unsigned compile verified: macOS 26.6.2, Xcode 26.6 (iOS Simulator SDK 26.5), Node 24.21.0, Ruby 3.3.12, CocoaPods 1.17.0 and xcodeproj 1.28.1. [Successful local/full Mac build](https://github.com/thelonewolfk32/guitar.io/actions/runs/39112172460). This is a simulator build, not a signed device result.
 - Original app icon copied from the existing Apple project.
 - Bundle ID `io.guitario.mobile`; scheme GuitarIO; App Group `group.io.guitario.mobile`; Share Extension `io.guitario.mobile.share`.
 

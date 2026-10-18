@@ -14,7 +14,7 @@ final class GuitarPlatform:NSObject,WKNavigationDelegate,WKScriptMessageHandler 
  @objc static func requiresMainQueueSetup()->Bool{true}
  @objc func constantsToExport()->[AnyHashable:Any]{[
   "profile":Bundle.main.object(forInfoDictionaryKey:"GuitarBuildProfile") as? String ?? "local",
-  "shareInbox":Bundle.main.object(forInfoDictionaryKey:"GuitarShareInboxEnabled") as? Bool ?? false,
+  "shareInboxEnabled":Bundle.main.object(forInfoDictionaryKey:"GuitarShareInboxEnabled") as? Bool ?? false,
   "appleSignIn":Bundle.main.object(forInfoDictionaryKey:"GuitarAppleSignInEnabled") as? Bool ?? false,
   "purchases":Bundle.main.object(forInfoDictionaryKey:"GuitarPurchasesEnabled") as? Bool ?? false,
   "googleSignIn":!(Bundle.main.object(forInfoDictionaryKey:"GIDClientID") as? String ?? "").isEmpty

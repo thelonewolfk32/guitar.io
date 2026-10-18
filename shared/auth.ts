@@ -17,9 +17,10 @@ export function authCallback(value:string,expected:string){
 export class AccountAuth {
  private sdk?:SupabaseClient;
  constructor(private url:string,private key:string,private storage:SupportedStorage,readonly callback:string){}
+ private get storageKey(){return 'guitario-auth-'+new URL(this.url).host;}
  get client(){
   if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(this.url)||!this.key)throw Error('Configure your Supabase project before signing in.');
-  return this.sdk ||= createClient(this.url,this.key,{auth:{storage:this.storage,storageKey:'guitario-auth-'+new URL(this.url).host,persistSession:true,autoRefreshToken:false,detectSessionInUrl:false,flowType:'pkce'}});
+  return this.sdk ||= createClient(this.url,this.key,{global:{fetch:async(input,init)=>{const controller=new AbortController(),abort=()=>controller.abort();if(init?.signal?.aborted)abort();init?.signal?.addEventListener('abort',abort,{once:true});const timer=setTimeout(abort,15000);try{return await fetch(input,{...init,signal:controller.signal});}finally{clearTimeout(timer);init?.signal?.removeEventListener('abort',abort);}}},auth:{storage:this.storage,storageKey:this.storageKey,persistSession:true,autoRefreshToken:false,detectSessionInUrl:false,flowType:'pkce'}});
  }
  async setSession(session:AccountSession){const {error}=await this.client.auth.setSession(session);if(error)throw error;}
  async current(){const {data,error}=await this.client.auth.getSession();if(error)throw error;return data.session as AccountSession|null;}
@@ -40,5 +41,9 @@ export class AccountAuth {
  }
  async updatePassword(password:string){if(password.length<12)throw Error('Use at least 12 characters.');const {error}=await this.client.auth.updateUser({password});if(error)throw error;}
  async refresh(){const {data,error}=await this.client.auth.refreshSession();if(error)throw error;return data.session as AccountSession;}
- async signOut(){if(this.sdk){const {error}=await this.sdk.auth.signOut({scope:'local'});if(error)throw error;}}
+ async signOut(){try{if(this.sdk){const {error}=await this.sdk.auth.signOut({scope:'local'});if(error)throw error;}}finally{
+  this.sdk=undefined;if(this.url&&this.key){const key=this.storageKey;let flows:string[]=[];try{const values=JSON.parse(await this.storage.getItem(key+'-flows-code-verifier')||'[]');if(Array.isArray(values))flows=values.filter(id=>typeof id==='string'&&/^[a-zA-Z0-9_-]{8,64}$/.test(id));}catch{}
+   for(const name of [key,key+'-user',key+'-code-verifier',key+'-flows-code-verifier',...flows.map(id=>key+'-flow-'+id+'-code-verifier')])await this.storage.removeItem(name);
+  }
+ }}
 }

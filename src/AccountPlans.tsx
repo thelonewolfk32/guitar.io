@@ -24,6 +24,8 @@ export default function AccountPlans({cloud,onClose}:{cloud:CloudSyncEngine;onCl
  <label><input type="checkbox" checked={analytics} disabled={busy} onChange={e=>{const enabled=e.target.checked;void perform(async()=>{await setUsageConsent(enabled);setAnalytics(enabled);});}}/>Share anonymous aggregate feature counts</label>
  <button className="text-button" disabled={busy} onClick={()=>void perform(()=>account.signOut())}>Sign out</button>
  </>}
+ {ready&&window.guitarAccount?.authenticate&&<div className="modal-actions"><button className="button secondary" disabled={busy} onClick={()=>void perform(()=>account.provider('google',!!account.session))}>{account.session?'Link Google account':'Continue with Google'}</button><button className="button secondary" disabled={busy} onClick={()=>void perform(()=>account.provider('apple',!!account.session))}>{account.session?'Link Apple account':'Sign in with Apple'}</button></div>}
+ {account.recovery&&<div><label>New password<input type="password" minLength={12} value={password} onChange={e=>setPassword(e.target.value)}/></label><button disabled={busy||password.length<12} onClick={()=>void perform(async()=>{await account.updatePassword(password);setPassword('');setMessage('Password updated.');})}>Save new password</button></div>}
  <LibraryAllowance key={account.session?.user.id||'local'}/>
  {message&&<p role="status">{message}</p>}{error&&<p className="form-error" role="alert">{error}</p>}</div></Modal>;
 }

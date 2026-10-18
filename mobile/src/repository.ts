@@ -14,6 +14,7 @@ export class NativeRepository {
  async setting<T=any>(key:string){return this.get<T>('settings',key);}
  async set(key:string,value:unknown){await this.put('settings',key,value);}
  async device(){let id=await this.setting<string>('deviceId');if(!id){id=crypto.randomUUID();await this.set('deviceId',id);}return id;}
+ async eraseDeletedAccount(){if(!this.scope)throw Error('Local guest library is preserved.');await this.sql.execute('delete from kv');await FileSystem.unlink(Dirs.DocumentDir+'/GuitarIO/'+this.scope).catch(()=>{});}
  async file(kind:string,id:string){return this.get<{path:string;hash:string;size:number;name?:string;mime?:string}>('files',kind+'/'+id);}
  async putFile(kind:string,id:string,base64:string,expected?:string,name?:string,mime?:string){
   const dir=Dirs.DocumentDir+'/GuitarIO/'+(this.scope||'local');await FileSystem.mkdir(dir);const temp=dir+'/'+crypto.randomUUID()+'.part';await FileSystem.writeFile(temp,base64,'base64');const stat=await FileSystem.stat(temp),hash=await FileSystem.hash(temp,'SHA-256');

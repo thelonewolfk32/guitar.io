@@ -38,6 +38,9 @@ app.whenReady().then(() => {
   }});
   const updatesReady=updates.load();
   ipcMain.handle('account:open-external',async(event,value)=>{requireApp(event);const url=new URL(value);if(url.protocol!=='https:'||!['checkout.stripe.com','billing.stripe.com'].includes(url.hostname)||url.username||url.password)throw Error('Invalid billing link.');await shell.openExternal(url.href);});
+  const oauth=require('./account-oauth.cjs').createAccountOAuth(url=>shell.openExternal(url));
+  ipcMain.handle('account:authenticate',async(event,url)=>{requireApp(event);if(url!==undefined&&typeof url!=='string')throw Error('Invalid sign-in request.');return oauth.wait(url);});
+  ipcMain.handle('account:cancel-auth',async event=>{requireApp(event);oauth.cancel();});
   const accountSessionFile=path.join(app.getPath('userData'),'account-session.bin'),secureStorage=require('electron').safeStorage;
   let accountSessionWrites=Promise.resolve();
   ipcMain.handle('account:load-session',async event=>{requireApp(event);if(!secureStorage.isEncryptionAvailable())return;await accountSessionWrites;try{return secureStorage.decryptString(await require('node:fs/promises').readFile(accountSessionFile));}catch{return;}});

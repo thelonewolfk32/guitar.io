@@ -1,4 +1,8 @@
 #import <React/RCTBridgeModule.h>
+@interface RCT_EXTERN_MODULE(GuitarAuth, NSObject)
+RCT_EXTERN_METHOD(signIn:(NSString *)provider resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(signOut:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+@end
 @interface RCT_EXTERN_MODULE(GuitarLocal, NSObject)
 RCT_EXTERN_METHOD(configure:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(status:(NSDictionary *)options resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)

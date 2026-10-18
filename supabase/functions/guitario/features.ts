@@ -68,7 +68,7 @@ export function featureRoutes({rest,env,fetcher}:Context){
    if(route==='owner-change'){if(!/^[a-f0-9-]{36}$/i.test(body.target||'')||!['grant','revoke','status'].includes(body.action))throw Error('Invalid owner change.');await rest('rpc/owner_change','POST',{p_actor:id,p_target:body.target,p_action:body.action,p_details:body.details||{}});return {saved:true};}
    if(route==='owner-feedback'){const feedback=await rest('feedback?order=created_at.desc&limit=100');for(const f of feedback)for(const a of f.attachments){const r=await fetcher(env('SUPABASE_URL')+'/storage/v1/object/sign/feedback-attachments/'+a.path,{method:'POST',headers:{Authorization:'Bearer '+env('SUPABASE_SERVICE_ROLE_KEY'),apikey:env('SUPABASE_SERVICE_ROLE_KEY')!,'Content-Type':'application/json'},body:JSON.stringify({expiresIn:300})});if(r.ok)a.url=env('SUPABASE_URL')+'/storage/v1'+(await r.json()).signedURL;}return {feedback};}
    if(route==='owner-feedback-status'){if(!['new','reviewing','planned','closed'].includes(body.status)||!/^[a-f0-9-]{36}$/i.test(body.id||''))throw Error('Invalid feedback status.');await rest('feedback?id=eq.'+body.id,'PATCH',{status:body.status});await rest('owner_audit','POST',{actor:id,action:'feedback-status',details:{id:body.id,status:body.status}});return {saved:true};}
-   if(route==='owner-usage')return {counts:await rest('usage_daily?order=day.desc&limit=365'),audit:await rest('owner_audit?order=created_at.desc&limit=100')};
+   if(route==='owner-usage')return {counts:await rest('usage_daily?order=day.desc&limit=365'),audit:await rest('owner_audit?order=created_at.desc&limit=100'),operations:await rest('rpc/ops_snapshot','POST',{})};
   }
   return undefined;
  }};

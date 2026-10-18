@@ -31,3 +31,7 @@ mobile/ios/score-assets/
 mobile/ios/GuitarIO.xcworkspace/
 mobile/ios/.xcode.env.local
 mobile/ios/GuitarIO.xcodeproj/xcuserdata/
+
+# Private recovery material
+*.guitariobak
+*.dump

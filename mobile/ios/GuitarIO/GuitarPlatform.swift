@@ -11,11 +11,18 @@ private final class LegacyScheme: NSObject, WKURLSchemeHandler {
 @objc(GuitarPlatform)
 final class GuitarPlatform:NSObject,WKNavigationDelegate,WKScriptMessageHandler {
  @objc static func requiresMainQueueSetup()->Bool{true}
+ @objc func constantsToExport()->[AnyHashable:Any]{[
+  "profile":Bundle.main.object(forInfoDictionaryKey:"GuitarBuildProfile") as? String ?? "local",
+  "shareInbox":Bundle.main.object(forInfoDictionaryKey:"GuitarShareInboxEnabled") as? Bool ?? false,
+  "appleSignIn":Bundle.main.object(forInfoDictionaryKey:"GuitarAppleSignInEnabled") as? Bool ?? false,
+  "purchases":Bundle.main.object(forInfoDictionaryKey:"GuitarPurchasesEnabled") as? Bool ?? false,
+  "googleSignIn":!(Bundle.main.object(forInfoDictionaryKey:"GIDClientID") as? String ?? "").isEmpty
+ ]}
  private let group="group.io.guitario.mobile"
  private var web:WKWebView?,resolve:RCTPromiseResolveBlock?,reject:RCTPromiseRejectBlock?,folder:URL?,records:FileHandle?
  private var files:[String:(FileHandle,SHA256,Int)]=[:],manifest:[String:[String:Any]]=[:],count=0,totalBytes=0
  private func inbox()throws->URL{guard let base=FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:group) else{throw NSError(domain:"GuitarIO",code:1,userInfo:[NSLocalizedDescriptionKey:"Configure the shared App Group."])};let dir=base.appendingPathComponent("ShareInbox");try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);return dir}
- @objc func shareInbox(_ resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){do{let directory=try inbox();let items=try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil).filter{$0.pathExtension=="json"}.prefix(100);resolve(try items.map{try JSONSerialization.jsonObject(with:Data(contentsOf:$0))})}catch{reject("SHARE_INBOX",error.localizedDescription,error)}}
+ @objc func shareInbox(_ resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){if !(Bundle.main.object(forInfoDictionaryKey:"GuitarShareInboxEnabled") as? Bool ?? false){resolve([]);return};do{let directory=try inbox();let items=try FileManager.default.contentsOfDirectory(at:directory,includingPropertiesForKeys:nil).filter{$0.pathExtension=="json"}.prefix(100);resolve(try items.map{try JSONSerialization.jsonObject(with:Data(contentsOf:$0))})}catch{reject("SHARE_INBOX",error.localizedDescription,error)}}
  @objc func ackShare(_ identifier:String,resolver resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){do{guard UUID(uuidString:identifier) != nil else{throw NSError(domain:"GuitarIO",code:2)};let path=try inbox().appendingPathComponent(identifier+".json");try FileManager.default.removeItem(at:path);resolve(nil)}catch{reject("SHARE_INBOX",error.localizedDescription,error)}}
  @objc func legacySession(_ resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){var query:[String:Any]=[kSecClass as String:kSecClassGenericPassword,kSecAttrService as String:"io.guitario.mobile.account",kSecAttrAccount as String:"cloud-session"];query[kSecReturnData as String]=true;var result:CFTypeRef?;let status=SecItemCopyMatching(query as CFDictionary,&result);if status==errSecItemNotFound{resolve(nil);return};guard status==errSecSuccess,let data=result as? Data else{reject("KEYCHAIN","Unlock the device before migrating credentials.",nil);return};resolve(String(data:data,encoding:.utf8))}
  @objc func legacySnapshot(_ resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){

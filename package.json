@@ -57,18 +57,24 @@
     "test:native-score": "node --import tsx tests/native-score-ui.mjs",
     "services:typecheck": "tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --allowImportingTsExtensions --lib ES2022,DOM supabase/functions/guitario/service.ts",
     "test:owner-ui": "node tests/owner-ui.mjs",
-    "test:v160-desktop": "node tests/v160-desktop.mjs"
+    "test:v160-desktop": "node tests/v160-desktop.mjs",
+    "services:hosted-test": "node scripts/hosted-acceptance.mjs",
+    "cloud:maintenance": "node scripts/cloud-maintenance.mjs",
+    "cloud:backup": "node scripts/cloud-backup.mjs backup",
+    "cloud:verify": "node scripts/cloud-backup.mjs verify"
   },
   "dependencies": {
     "@capacitor/core": "8.5.2",
     "@capacitor/ios": "8.5.2",
     "@coderline/alphatab": "1.8.4",
+    "@supabase/supabase-js": "2.118.0",
     "bonjour-service": "1.4.4",
     "lucide-react": "^0.577.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "3.1152.0",
     "@capacitor/cli": "8.5.2",
     "@electric-sql/pglite": "0.5.9",
     "@types/node": "^24.0.0",
@@ -80,6 +86,7 @@
     "esbuild": "0.25.12",
     "fake-indexeddb": "^6.2.5",
     "happy-dom": "^20.14.5",
+    "pg": "8.23.1",
     "playwright": "^1.56.0",
     "supabase": "2.120.0",
     "tsx": "^4.23.15",

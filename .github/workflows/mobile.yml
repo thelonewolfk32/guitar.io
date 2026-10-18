@@ -32,6 +32,16 @@ jobs:
       - run: npm run assets && npm run mobile:prepare
       - run: bundle install
         working-directory: mobile
+      - name: Record tested Apple tool versions
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          node --version
+          ruby --version
+          bundle --version
+          bundle exec pod --version
+        working-directory: mobile
       - run: bundle exec ruby scripts/check-ios-profiles.rb
         working-directory: mobile
       - run: bundle exec ruby scripts/configure-ios.rb --profile ${{ matrix.profile }}

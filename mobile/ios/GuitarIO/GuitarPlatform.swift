@@ -3,6 +3,7 @@ import React
 import WebKit
 import Security
 import CryptoKit
+import AVFoundation
 
 private final class LegacyScheme: NSObject, WKURLSchemeHandler {
  func webView(_ webView: WKWebView, start task: WKURLSchemeTask){let data=Data("<!doctype html><meta charset=\"utf-8\"><title>Library migration</title>".utf8);task.didReceive(URLResponse(url:task.request.url!,mimeType:"text/html",expectedContentLength:data.count,textEncodingName:"utf-8"));task.didReceive(data);task.didFinish()}
@@ -20,6 +21,8 @@ final class GuitarPlatform:NSObject,WKNavigationDelegate,WKScriptMessageHandler 
  ]}
  private var migrationScope=""
  private let group="group.io.guitario.mobile"
+ @objc func prepareAudio(_ resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){do{let audio=AVAudioSession.sharedInstance();try audio.setCategory(.playback,mode:.default,options:[.mixWithOthers]);try audio.setActive(true);resolve(nil)}catch{reject("AUDIO_SESSION","Could not prepare audio output.",error)}}
+ @objc func releaseAudio(_ resolve:@escaping RCTPromiseResolveBlock,rejecter reject:@escaping RCTPromiseRejectBlock){do{try AVAudioSession.sharedInstance().setActive(false,options:[.notifyOthersOnDeactivation]);resolve(nil)}catch{reject("AUDIO_SESSION","Could not release audio output.",error)}}
  private var web:WKWebView?,resolve:RCTPromiseResolveBlock?,reject:RCTPromiseRejectBlock?,folder:URL?,records:FileHandle?
  private var files:[String:(FileHandle,SHA256,Int)]=[:],manifest:[String:[String:Any]]=[:],count=0,totalBytes=0
  private func inbox()throws->URL{guard let base=FileManager.default.containerURL(forSecurityApplicationGroupIdentifier:group) else{throw NSError(domain:"GuitarIO",code:1,userInfo:[NSLocalizedDescriptionKey:"Configure the shared App Group."])};let dir=base.appendingPathComponent("ShareInbox");try FileManager.default.createDirectory(at:dir,withIntermediateDirectories:true);return dir}

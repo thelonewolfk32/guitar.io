@@ -17,3 +17,8 @@ Key changes:
 - Stripe/RevenueCat integration remains configuration-dependent. No live accounts, project, staging deployment or purchases have been created.
 
 The user confirmed there is no Supabase project and requested the local setup package. Do not report hosted acceptance or an installable iOS build without actually completing those checks.
+
+## iOS-first continuation (18 October 2026)
+The first release gate is the owner's free-signing iPhone refresh. Read IOS_FIRST_RELEASE.md and the revised IOS_REACT_NATIVE_HANDOFF.md first. `--profile local` removes paid Apple capabilities; `--profile full` enables them after enrolment. Native Google/Apple plus Supabase Auth SDK/Keychain, desktop system-browser PKCE, recovery, full native/legacy backup restore, upload leases, seven-day GC, R2 recovery tooling, operational alerts and recent-auth/provider-revoked account deletion are prepared. Source packaging now points to React Native, not the retained Capacitor project.
+
+No Supabase project exists. Provision Free staging first, then separate Pro production; Google/email precede full Apple/TestFlight. Use temporary owner Premium gifts before sandbox purchases. The R2/maintenance workflow is disabled until its protected environment/secrets and enable variable exist. Hosted restoration and physical iPhone checks are release gates, never inferred from local fixtures or unsigned CI. Keep the stable desktop release unpublished until after the iOS gates.

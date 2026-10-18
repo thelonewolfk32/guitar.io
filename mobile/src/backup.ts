@@ -9,9 +9,11 @@ const chunk=192*1024;
 const stores=new Set(['syncEntities','pending','practice','drafts']);
 const settings=new Set(['deviceId','syncHead','syncClock','legacy-migrated-v1','section-colours']);
 const line=(value:unknown)=>JSON.stringify(value).replace(/[^\x00-\x7f]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'))+'\n';
-function checkReferences(records:any[],files:any[]){
+export function checkReferences(records:any[],files:any[]){
  const rows=validateSyncRows(records.filter(r=>r.store==='syncEntities').map(r=>r.value)),needed=new Set<string>();
+ const songs=new Set(rows.filter(r=>r.entity==='song'&&r.operation==='upsert').map(r=>r.entityId));
  for(const row of rows.filter(r=>r.operation==='upsert')){
+  if(row.entity==='recording'&&!songs.has(String(row.patch?.songId||row.entityId.split(':')[0])))continue;
   if(row.entity==='song')needed.add('source/'+row.entityId);
   const p=row.patch||{};for(const id of [p.artworkAssetId,...Object.values(p.collectionArt||{}),p.assetId])if(typeof id==='string'&&id)needed.add('asset/'+id);
  }
@@ -54,13 +56,14 @@ export async function restoreLibrary(repo:NativeRepository,path:string){
   validateSyncRows(backup.records.filter(r=>r.store==='syncEntities').map(r=>r.value));
   entries.push(...backup.records.filter(r=>r.store==='pending').map(r=>({id:r.key,kind:'pending',details:r.value})));
   if(!canAddEntries(0,entries.length,account.entitlement))throw Error('Backup exceeds your saved-song allowance. The backup remains available; request an allowance increase or Premium before restoring.');
-  if(repo.scope){if(repo.scope!==account.session?.user.id)throw Error('Account changed.');await account.request('reserve-entries',{entries});}
+  if(repo.scope){if(repo.scope!==account.session?.user.id)throw Error('Account changed.');await account.request('reserve-import',{entries});}
   const dir=Dirs.DocumentDir+'/GuitarIO/'+(repo.scope||'local');await FileSystem.mkdir(dir);
   for(const file of backup.files){const target=dir+'/'+file.hash;if(!await FileSystem.exists(target))await FileSystem.cp(file.path,target);if((await FileSystem.stat(target)).size!==file.size||await FileSystem.hash(target,'SHA-256')!==file.hash)throw Error('Restored bytes do not match.');file.path=target;}
   await repo.sql.transaction(async tx=>{
    for(const row of backup.records){if(row.store==='settings'&&backup.header.scope!==repo.scope&&['deviceId','legacy-migrated-v1'].includes(row.key))continue;if(row.store==='drafts'){const file=backup.files.find(f=>f.key==='draft/'+row.key);if(!file)throw Error('Backup draft file is missing.');row.value.path=file.path;}await repo.put(row.store,row.key,row.value,tx);}
    for(const file of backup.files){const {key,type,...value}=file;await repo.put('files',key,value,tx);}
    await repo.put('settings','cloud-consent',false,tx);await repo.put('settings','lan-enabled',false,tx);
+   if(!backup.records.some(r=>r.store==='settings'&&r.key==='legacy-migrated-v1')||backup.header.scope!==repo.scope)await repo.put('settings','legacy-migrated-v1',{restoredBackup:true,at:new Date().toISOString()},tx);
   });
   return {records:backup.records.length,files:backup.files.length,bytes:backup.bytes};
  }finally{await FileSystem.unlink(backup.stage).catch(()=>{});}

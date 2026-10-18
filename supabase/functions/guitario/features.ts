@@ -28,10 +28,10 @@ export function featureRoutes({rest,env,fetcher}:Context){
  }
  return {snapshot,owner,async handle(route:string,id:string,token:string,body:any){
   if(route==='entries')return {entries:await rest('library_entries?user_id=eq.'+id)};
-  if(route==='reserve-entries'){
-   if(!Array.isArray(body.entries)||body.entries.length>100)throw Error('Invalid song reservations.');
+  if(route==='reserve-entries'||route==='reserve-import'){
+   if(!Array.isArray(body.entries)||body.entries.length>(route==='reserve-import'?10000:100))throw Error('Invalid song reservations.');
    for(const e of body.entries){if(typeof e.id!=='string'||e.id.length>200||!['pending','score'].includes(e.kind))throw Error('Invalid entry.');if(e.kind==='pending'){const link=parseSongLink(e.details?.link?.url||'');e.details={title:String(e.details.title||'Shared song').slice(0,200),artist:String(e.details.artist||'').slice(0,200),link,createdAt:new Date().toISOString()};}}
-   return rest('rpc/reserve_entries','POST',{p_user:id,p_entries:body.entries});
+   return rest(route==='reserve-import'?'rpc/reserve_import':'rpc/reserve_entries','POST',{p_user:id,p_entries:body.entries});
   }
   if(route==='active-entries'){if(!Array.isArray(body.ids)||body.ids.some((x:any)=>typeof x!=='string'))throw Error('Invalid active entries.');await rest('rpc/set_active_entries','POST',{p_user:id,p_ids:body.ids});return {saved:true};}
   if(route==='delete-entry'){if(typeof body.id!=='string')throw Error('Invalid entry.');const current=await rest('library_entries?user_id=eq.'+id+'&id=eq.'+encode(body.id));if(current[0]?.kind!=='pending')throw Error('Delete playable songs through library sync.');await rest('library_entries?user_id=eq.'+id+'&id=eq.'+encode(body.id),'PATCH',{deleted:true,active:false});return {saved:true};}

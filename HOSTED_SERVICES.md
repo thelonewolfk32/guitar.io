@@ -3,7 +3,7 @@
 Status: prepared locally; no Supabase project exists yet. Local tests use isolated fixtures and embedded PostgreSQL. No live customer/payment data was created.
 
 ## 1. Staging Supabase
-Create a staging project (Sydney region is the default recommendation for this Australian launch). Enable email confirmation, set trusted application/recovery URLs, and configure production email delivery before public signup.
+Create `guitario-staging` in Sydney in a Free organisation. Later create `guitario-production` in Sydney in a separately billed Pro organisation. Start with the local iPhone milestone in IOS_FIRST_RELEASE.md. Enable email confirmation, exact application/recovery URLs, manual identity linking and SMTP before hosted tests. Native callback: `io.guitario.mobile.auth://callback`; desktop system-browser callback: `http://127.0.0.1:43871/auth/callback`. Preserve the SDK's per-flow `sb_flow_id` query. Provider setup is in IOS_REACT_NATIVE_HANDOFF.md.
 
 Link the CLI to the project you intend to use, then apply migrations:
 ```sh
@@ -19,7 +19,7 @@ Migrations install account-wide song reservations, free-cloud/storage rules, ind
 
 Supabase injects SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY into its function runtime. Do not include reserved SUPABASE_ names in the secrets file. Set ALLOWED_ORIGINS to the exact desktop/browser/admin origins, including your Pages address. Native requests still require verified access tokens. Public client builds use VITE_ACCOUNTS_ENABLED=true, VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY. Billing activation is independent: keep MONETISATION_ENABLED=false until purchase validation passes.
 
-Cloud data is private, scoped to the verified Supabase user. Free storage is 150 MiB, Premium 1 GiB, new files 30 MiB. Downgrades preserve stored bytes. Storage insertion checks its actual/probed byte size against the reservation; test this with the hosted Storage API during staging. Explicit deletions release logical quota; old hash-addressed objects need storage cleanup before a public launch.
+Cloud data is private, scoped to the verified Supabase user. Free storage is 150 MiB, Premium 1 GiB, new files 30 MiB. Downgrades preserve stored bytes. Storage insertion checks its actual/probed byte size against its locked reservation. Run `npm run services:hosted-test` with the isolated staging settings in `.env.acceptance.example`. Upload leases, seven-day orphan cleanup and durable account deletion are implemented by the new lifecycle migration; enable their managed schedule before production. See CLOUD_OPERATIONS.md for monitoring, 30 daily R2 recovery points and the required database-plus-files restore drill.
 
 ## 2. Desktop billing
 Create AUD 5/month and AUD 50/year recurring Stripe prices. Configure STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRO_MONTHLY_PRICE_ID, STRIPE_PRO_YEARLY_PRICE_ID and BILLING_RETURN_URL.
@@ -39,7 +39,7 @@ BRAVE_SEARCH_API_KEY enables permitted GP candidate-page search. APPLE_MUSIC_DEV
 ## 4. Owner dashboard, privacy and operations
 Follow OWNER_SETUP.md to bootstrap one owner UUID, require MFA, build the dashboard and deploy it to Cloudflare Pages. Do not make a user an owner through editable account metadata.
 
-Before public launch, run two-account/two-device hosted tests, confirm private bucket policies and account suspension, configure backups/monitoring, implement the account-deletion lifecycle, and schedule removal of abandoned/unreferenced blobs and expired reservations. The user has requested local preparation only until the staging project exists.
+Before external beta, run two-account/two-device hosted tests, confirm private bucket policies, provider revocation and account deletion, and record actual backup/monitoring/cleanup results. Do not expire saved library slots or shared links as a cleanup shortcut. The owner still needs to create the hosted projects and supply settings privately; no deployment is implied by the local package.
 
 Feature analytics are opt-in aggregate counts. Practice/progress data is private account data. See PRIVACY.md. Teacher/enterprise interfaces are foundations; there are no active teacher/student dashboards in this release.
 

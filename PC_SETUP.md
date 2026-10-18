@@ -41,13 +41,15 @@ Copy the example environment files before entering your own settings. `db reset`
 - RevenueCat: Apple purchases mapped to the same Guitar.io account.
 - Apple Developer / App Store Connect: App Groups, signing, subscriptions and TestFlight.
 - Cloudflare Pages: owner dashboard hosting.
+- Cloudflare R2: private original-file/database recovery points, independent of Supabase.
+- Google Auth Platform: native iOS and Web OAuth clients for Google sign-in.
 - Brave Search API: GP candidate-page searches.
 - Apple Music developer token: optional Apple Music metadata enrichment.
 
-Start with a separate Supabase staging project, not a customer project. Continue in HOSTED_SERVICES.md and OWNER_SETUP.md. Service secrets go in Supabase's secret settings; only the publishable URL/key and RevenueCat Apple public SDK key go into client build settings.
+Start with Free staging in Sydney, then a separately billed Pro production organisation/project. Continue in IOS_FIRST_RELEASE.md, HOSTED_SERVICES.md, CLOUD_OPERATIONS.md and OWNER_SETUP.md. Service secrets go in Supabase/scheduler secret settings; only public client configuration goes into app builds. The hourly maintenance/daily R2 workflow is disabled until explicitly configured. No always-on home PC is needed for customer sync, backups or update hosting.
 
 ## Apple development on the Mac
-Install Xcode/command-line tools, Node 24, Watchman, Ruby 3.3 and Bundler. The mobile Gemfile pins CocoaPods 1.17.0 and xcodeproj 1.28.1. Follow IOS_REACT_NATIVE_HANDOFF.md; Windows cannot compile/sign the native iOS application.
+Install Xcode/command-line tools, Node 24, Watchman, Ruby 3.3 and Bundler. The mobile Gemfile pins CocoaPods 1.17.0 and xcodeproj 1.28.1. First use `--profile local` with the existing free Personal Team. App Groups, the extension, Apple login and purchase UI use `--profile full` after paid enrolment. Back up the old app/container before installation. Follow IOS_REACT_NATIVE_HANDOFF.md; Windows cannot compile/sign the native iOS application.
 
 ## Updates without public GitHub
 The desktop updater already supports an HTTPS feed with Ed25519-signed manifests and private Supabase Storage downloads. Your source repository and customer download host can be separate. Existing GitHub-updater installations need a bridge release carrying the new public verification key/feed settings. Keep the signing private key server-side.

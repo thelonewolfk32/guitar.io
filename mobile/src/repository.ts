@@ -6,7 +6,7 @@ import type {SyncChange} from '../../src/types';
 import {mobileAccount as account} from './api';import {featureAccess,canAddEntries} from '../../src/plans';
 export class NativeRepository {
  readonly sql:DB;private serial=Promise.resolve();
- constructor(readonly scope:string){if(scope&&!/^[a-f0-9-]{36}$/i.test(scope))throw Error('Invalid library scope.');this.sql=open({name:'guitario-'+(scope||'local')+'.sqlite'});this.sql.executeSync('create table if not exists kv(store text not null,key text not null,value text not null,primary key(store,key))');}
+ constructor(readonly scope:string,ephemeral=false){if(scope&&!/^[a-f0-9-]{36}$/i.test(scope))throw Error('Invalid library scope.');this.sql=open({name:'guitario-'+(scope||'local')+'.sqlite',...(ephemeral?{location:':memory:'}:{})});this.sql.executeSync('create table if not exists kv(store text not null,key text not null,value text not null,primary key(store,key))');}
  async get<T=any>(store:string,key:string):Promise<T|undefined>{const r=await this.sql.execute('select value from kv where store=? and key=?',[store,key]);return r.rows[0]?JSON.parse(String(r.rows[0].value)):undefined;}
  async list<T=any>(store:string):Promise<T[]>{const r=await this.sql.execute('select value from kv where store=?',[store]);return r.rows.map(row=>JSON.parse(String(row.value)));}
  async put(store:string,key:string,value:unknown,tx?:Transaction){await (tx||this.sql).execute('insert into kv values(?,?,?) on conflict(store,key) do update set value=excluded.value',[store,key,JSON.stringify(value)]);}

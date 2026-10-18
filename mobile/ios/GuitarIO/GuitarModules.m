@@ -12,6 +12,6 @@ RCT_EXTERN_METHOD(fetchJSON:(NSDictionary *)options resolver:(RCTPromiseResolveB
 @interface RCT_EXTERN_MODULE(GuitarPlatform, NSObject)
 RCT_EXTERN_METHOD(shareInbox:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(ackShare:(NSString *)identifier resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
-RCT_EXTERN_METHOD(legacySnapshot:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(legacySnapshot:(NSString *)scope resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(legacySession:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 @end

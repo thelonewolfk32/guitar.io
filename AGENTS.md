@@ -6,7 +6,7 @@ The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertis
 - Package version: 1.6.0. Last previously published desktop release: 1.5.1. Do not infer publication or deployment from a version string.
 - Desktop remains React/TypeScript/Vite and Electron 44.4.5, Node 24.
 - The active Apple app is React Native 0.88.0 / React 19.3.0 under `mobile`, using bundle ID `io.guitario.mobile`.
-- Run the steps in IOS_REACT_NATIVE_HANDOFF.md. `mobile/scripts/configure-ios.rb` connects the native modules, bundled score WebView and Share Extension before CocoaPods/Xcode builds.
+- Run the iOS-first gates in IOS_FIRST_RELEASE.md and the steps in IOS_REACT_NATIVE_HANDOFF.md. `mobile/scripts/configure-ios.rb` connects the native modules, bundled score WebView before CocoaPods/Xcode builds. Use `--profile local` for free Personal Team signing; `--profile full` enables paid Apple capabilities. Never change bundle/team identity to bypass a signing error.
 - The previous `ios/App` Capacitor project is retained for migration and reference. Do not overwrite or regenerate it.
 - Mac desktop remains Electron. Do not imply the React Native iOS app is a replacement Mac desktop build.
 - Keep mobile/node_modules, Pods, generated score assets, signing files and personal libraries out of Git and Source ZIPs.
@@ -34,3 +34,5 @@ Run relevant tests, desktop/admin/mobile typechecks and builds. Use isolated fix
 Native Swift compilation, signing, App Groups, real-device sound and Apple purchase validation must be reported separately from TypeScript/Metro/browser results.
 The user has no Supabase project yet and requested the local setup package. Do not claim staging, live payments, private update hosting or TestFlight deployment is complete.
 Published GitHub releases/tags are immutable. Source repository: https://github.com/thelonewolfk32/guitar.io.
+
+- Cloud operations and private R2 recovery tooling are in CLOUD_OPERATIONS.md. Stable desktop publication follows iOS acceptance. No hosted restoration, new signing result or physical-device acceptance may be inferred from old CI.

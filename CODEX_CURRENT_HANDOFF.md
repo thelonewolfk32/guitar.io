@@ -1,4 +1,6 @@
-# Current Guitar.io handoff — V1.6
+# Current Guitar.io handoff — V1.6.0 published
+
+V1.6.0 is published from `0089ce43d01144a596076b0bd420f32a5fcbb572` through the normal updater. PR #1 is merged. Windows/macOS 15/macOS 26 release checks passed; the original V1.5.1 parser detects both verified downloads. See VALIDATION-v1.6.0.md for final evidence and the transient runner retry.
 
 22 October 2026: the owner requested and explicitly authorised a normal desktop release for the build-161 LAN handoff. DESKTOP_SYNC_HANDOFF.md describes protocol-3 manifests, local file registration, durable queue repair and independent desktop hosting. This supersedes the earlier desktop hold below. Preserve the newer iOS work on the owner's Mac; this repository does not contain all those unshared changes.
 
@@ -6,7 +8,7 @@ Read AGENTS.md, MONETISATION.md, PC_SETUP.md, HOSTED_SERVICES.md, OWNER_SETUP.md
 
 The user approved free Supabase cloud sync, five saved entries on Free, Premium automation/YouTube/unlimited song count, no ads, React Native Apple development, teacher foundations, owner administration, feedback and opt-in aggregate usage.
 
-The working tree includes the earlier unpublished V1.5.2 deletion/onboarding/update/private-feed groundwork and the new V1.6 implementation. Preserve prior fixes and private-data boundaries. Last previously published version was V1.5.1. See VALIDATION-v1.6.0.md for actual final verification and publication status.
+The published V1.6.0 release includes the previously unpublished V1.5.2 deletion/onboarding/update/private-feed groundwork and the V1.6 implementation. Preserve prior fixes and private-data boundaries. Last previously published version was V1.5.1. See VALIDATION-v1.6.0.md for actual final verification and publication status.
 
 Key changes:
 - Shared capabilities/limits/expiry/grant sources; independent owner gifts and server-enforced song/storage limits.

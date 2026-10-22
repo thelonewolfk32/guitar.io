@@ -1,3 +1,17 @@
+# Published desktop release — V1.6.0
+
+Published 22 October 2026 from `0089ce43d01144a596076b0bd420f32a5fcbb572`: [V1.6.0 downloads](https://github.com/thelonewolfk32/guitar.io/releases/tag/v1.6.0). PR #1 is merged into main. Published tags and archives remain immutable.
+
+[Release workflow](https://github.com/thelonewolfk32/guitar.io/actions/runs/39772427119): 200 regression tests, packaged Windows sync and three updater scenarios, macOS 15/26 updater/signing and independent LAN/offline tests, archive creation and publication all passed. The first tag-run attempt stopped safely on a transient Windows file lock before its deliberately broken-startup rollback fixture reached the expected failure; a fresh-runner retry passed. The independent main-branch run also passed rollback. No gate was removed or relaxed.
+
+The original `v1.5.1` release parser was executed against the live, unauthenticated GitHub latest-release endpoint and reported **available / 1.6.0** with SHA-256 digests for both Windows x64 and Apple Silicon Mac. Final assets:
+
+- Windows ZIP: `86caed0723e17ca492b08050e782144c9835137c9e32d7645688e14c5e08b8ca`
+- Mac ZIP: `78f31d6ac9d3e067a8b7f8fcdf12303e748d4f40161cd3803f2faa165413fcf0`
+- Source ZIP: `baf6b999f745bf522e07a2418079f263fb2bd81d45fcdee1a04d027806504744`
+
+Both unsigned React Native profiles also passed [main-branch iOS CI](https://github.com/thelonewolfk32/guitar.io/actions/runs/39772387763). This does not establish physical-iPhone signing, the newer build-161 working copy, the actual 50-song library, home-network/firewall behavior, or hosted Supabase/purchase deployment. Those device/service checks remain as described below.
+
 # Desktop LAN repair validation — 22 October 2026
 
 The owner authorised normal desktop publication for the iOS build-161 handoff. This release includes all earlier V1.6 source already pushed to the development branch. Tested implementation: `76dd399959c9eb850695088dd323a62feabe6a50`. The following final documentation change does not change executable code.

@@ -3,7 +3,7 @@
 The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertising/Capacitor direction. Preserve all unrelated local work.
 
 ## Current source and platforms
-- Package version: 1.6.0. Last previously published desktop release: 1.5.1. Do not infer publication or deployment from a version string.
+- Published desktop version: 1.6.0, tag v1.6.0 at 0089ce43d01144a596076b0bd420f32a5fcbb572. Windows/Mac publication and original V1.5.1 detection were verified; see VALIDATION-v1.6.0.md. Native/cloud deployment is separate.
 - Desktop remains React/TypeScript/Vite and Electron 44.4.5, Node 24.
 - The active Apple app is React Native 0.88.0 / React 19.3.0 under `mobile`, using bundle ID `io.guitario.mobile`.
 - Run the iOS-first gates in IOS_FIRST_RELEASE.md and the steps in IOS_REACT_NATIVE_HANDOFF.md. `mobile/scripts/configure-ios.rb` connects the native modules, bundled score WebView before CocoaPods/Xcode builds. Use `--profile local` for free Personal Team signing; `--profile full` enables paid Apple capabilities. Never change bundle/team identity to bypass a signing error.

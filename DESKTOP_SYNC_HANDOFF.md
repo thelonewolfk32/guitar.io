@@ -1,5 +1,7 @@
 # V1.6 desktop file replication — 22 October 2026
 
+[V1.6.0 is published](https://github.com/thelonewolfk32/guitar.io/releases/tag/v1.6.0) with Windows x64, Apple Silicon Mac, Source and checksum downloads. The original V1.5.1 updater detects both platform builds. Final release evidence is in VALIDATION-v1.6.0.md.
+
 This repair responds to the iOS `1.6.0-sync-diagnostics-161` handoff. That phone build and its newer iOS changes are maintained on the owner's Mac; they are not presumed to be present in this checkout. Preserve that working copy. Merge the focused native pairing changes below rather than replacing the Mac's mobile folder from the desktop Source ZIP.
 
 ## Install and recover

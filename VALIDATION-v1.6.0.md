@@ -1,6 +1,6 @@
 # Desktop LAN repair validation — 22 October 2026
 
-The owner authorised normal desktop publication for the iOS build-161 handoff. This candidate includes all earlier V1.6 source already pushed to the development branch; the normal desktop release still needs its new Windows/Mac packaging workflow to pass before publication.
+The owner authorised normal desktop publication for the iOS build-161 handoff. This release includes all earlier V1.6 source already pushed to the development branch. Tested implementation: `76dd399959c9eb850695088dd323a62feabe6a50`. The following final documentation change does not change executable code.
 
 Locally verified on Windows / Node 24.19.0:
 - 200 regression tests passed, zero failures, including the native pairing addition.
@@ -8,7 +8,7 @@ Locally verified on Windows / Node 24.19.0:
 - Real packaged desktop encrypted LAN GP/artwork/audio transfers, cached-file reuse, stale initialized queue repair, independent relay with original host stopped, restart and offline score opening.
 - Focused 50 GP / 49 artwork / zero-queue regression, missing descriptors, SHA-256 mismatch, account isolation and all-endpoint/direct-address pairing.
 
-Mac CI and final publication results are pending at this point. Physical iPhone build-161 acceptance and the owner's actual PC/Mac network/firewall/original-file audit remain device checks. Hosted services and purchases are configuration-dependent, not newly deployed by this desktop repair. See DESKTOP_SYNC_HANDOFF.md.
+The Windows package and both macOS 15/26 updater and real packaged LAN/independent-host/offline tests passed in [desktop CI run 37](https://github.com/thelonewolfk32/guitar.io/actions/runs/39745851367). Windows also passed actual skipped-version installation and failed-startup rollback. The initially cancelled, unstarted macOS 26 job was retried successfully. The tag-triggered release workflow repeats these checks before it publishes both platform downloads; publication is verified separately in GitHub Releases. Physical iPhone build-161 acceptance and the owner's actual PC/Mac network/firewall/original-file audit remain device checks. Hosted services and purchases are configuration-dependent, not newly deployed by this desktop repair. See DESKTOP_SYNC_HANDOFF.md.
 
 The following is the retained earlier iOS-first evidence; its publication hold has been superseded by the owner's 22 October instruction.
 

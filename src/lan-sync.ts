@@ -4,16 +4,19 @@ import {validateSyncRows,type SyncRow} from './sync-model';
 import {seal,open,newSecret,parsePairing,pairingCode,base64,unbase64} from '../shared/lan-crypto.mjs';
 
 import {shortCode,pairingIdentity,pairingSession,pairingCommit} from '../shared/lan-pairing.mjs';
+import {rankEndpoints,directEndpoint,connectionProblem} from '../shared/lan-endpoints.mjs';
+import {contentManifest,repairLocalContent,auditOfflineContent} from './content-audit';
+import {version} from '../package.json';
 export type LanStatus={available:boolean;enabled:boolean;name:string;endpoints:string[];discovered:{id:string;name:string;code?:string;endpoints:string[]}[];error?:string;wifi?:boolean};
 export type LanConfig={enabled:boolean;id:string;secret:string;name:string;pairingCode?:string;autoSync?:boolean};
 export type Peer={id:string;name:string;secret:string;endpoints:string[];lastSync?:string;error?:string;clientOnly?:boolean};
 export type SyncEvent={at:string;stage:string;message:string;error?:boolean;peer?:string;entity?:string};
-export type SyncView={enabled:boolean;available:boolean;name:string;code:string;peers:Peer[];busy:boolean;bytes:number;pendingFiles:number;lastSync?:string;error:string;waiting:boolean;autoSync:boolean;events:SyncEvent[];stage:string;incoming?:{id:string;name:string;digits:string}};
+export type SyncView={enabled:boolean;available:boolean;name:string;code:string;peers:Peer[];busy:boolean;bytes:number;pendingFiles:number;offlineComplete:boolean;lastSync?:string;error:string;waiting:boolean;autoSync:boolean;events:SyncEvent[];stage:string;incoming?:{id:string;name:string;digits:string}};
 declare global {interface Window { guitarLan?:{
   configure:(config:LanConfig)=>Promise<LanStatus>;status:()=>Promise<LanStatus>;request:(endpoint:string,body:unknown)=>Promise<unknown>;
   onRequest?:(callback:(payload:any,deviceId:string)=>Promise<unknown>)=>()=>void;
 };}}
-const initial:SyncView={enabled:false,available:false,name:'Guitar.io',code:'',peers:[],busy:false,bytes:0,pendingFiles:0,error:'',waiting:false,autoSync:true,events:[],stage:'Idle'};
+const initial:SyncView={enabled:false,available:false,name:'Guitar.io',code:'',peers:[],busy:false,bytes:0,pendingFiles:0,offlineComplete:false,error:'',waiting:false,autoSync:true,events:[],stage:'Idle'};
 export class SyncEngine {
   view:SyncView={...initial};private config?:LanConfig;private timer?:ReturnType<typeof setTimeout>;private listeners=new Set<()=>void>();private disconnect?:()=>void;private disposed=false;private busy=false;private wake?:()=>void;private transfers=new Map<string,Promise<void>>();
   private activeDownloads=0;private downloadWaiters:(()=>void)[]=[];private changed?:()=>void;
@@ -28,16 +31,17 @@ export class SyncEngine {
   private update(patch:Partial<SyncView>){this.view={...this.view,...patch};for(const listener of this.listeners)listener();}
   private log(stage:string,message:string,peer?:string,error=false,entity?:string){const events=[...this.view.events,{at:new Date().toISOString(),stage,message:message.slice(0,700),peer,error,entity}].slice(-120);this.update({events});try{window.localStorage.setItem('guitario-sync-diagnostics',JSON.stringify(events));}catch{}}
   clearDiagnostics(){this.update({events:[]});try{window.localStorage.removeItem('guitario-sync-diagnostics');}catch{}}
-  private applied(){this.onChanges();window.dispatchEvent(new Event('guitario:synced'));}
-  async diagnostics(){const native=await window.guitarLan?.status(),library=await readLibraryIndex(),d=await db();return {version:'1.5.1',at:new Date().toISOString(),stage:this.view.stage,sessionWireBytes:this.view.bytes,enabled:this.view.enabled,autoSync:this.view.autoSync,network:{endpoints:native?.endpoints || [],discovered:native?.discovered.map(p=>({name:p.name,endpoints:p.endpoints})),error:native?.error},peers:await Promise.all(this.view.peers.map(async p=>({name:p.name,endpoints:p.endpoints,error:p.error,lastSuccessfulSync:p.lastSync,pullCheckpoint:await syncSetting(`pull:${p.id}`),pushCheckpoint:await syncSetting(`push:${p.id}`)}))),catalogue:{songs:library.songs.map(s=>({id:s.id,title:s.title,artist:s.artist,album:s.album,artworkAssetId:s.artworkAssetId,lastOpenedAt:s.lastOpenedAt,lastPlayedAt:s.lastPlayedAt,lastPlayedBar:s.lastPlayedBar})),originalRecords:await req(d.transaction('songSources').objectStore('songSources').count()),attachmentRecords:await req(d.transaction('assets').objectStore('assets').count())},events:this.view.events};}
+  private applied(){this.update({offlineComplete:false});this.onChanges();window.dispatchEvent(new Event('guitario:synced'));}
+  async diagnostics(){const native=await window.guitarLan?.status(),library=await readLibraryIndex();return {version,protocol:3,at:new Date().toISOString(),stage:this.view.stage,sessionWireBytes:this.view.bytes,enabled:this.view.enabled,autoSync:this.view.autoSync,network:{endpoints:native?.endpoints || [],discovered:native?.discovered.map(p=>({name:p.name,endpoints:p.endpoints})),error:native?.error},peers:await Promise.all(this.view.peers.map(async p=>({name:p.name,endpoints:p.endpoints,error:p.error,lastSuccessfulSync:p.lastSync,pullCheckpoint:await syncSetting(`pull:${p.id}`),pushCheckpoint:await syncSetting(`push:${p.id}`)}))),content:await auditOfflineContent(),catalogue:{songs:library.songs.map(s=>({id:s.id,title:s.title,artist:s.artist,album:s.album,artworkAssetId:s.artworkAssetId,lastOpenedAt:s.lastOpenedAt,lastPlayedAt:s.lastPlayedAt,lastPlayedBar:s.lastPlayedBar}))},events:this.view.events};}
   async start(){
+    this.disposed=false;
     try{const saved=JSON.parse(window.localStorage.getItem('guitario-sync-diagnostics') || '[]');if(Array.isArray(saved))this.update({events:saved.slice(-120)});}catch{}
     if(!window.guitarLan)return;const id=await getDeviceId(),saved=await syncSetting<LanConfig>('config');this.config={enabled:saved?.enabled || false,autoSync:saved?.autoSync ?? true,pairingCode:saved?.pairingCode || shortCode(),id,secret:saved?.secret || newSecret(),name:saved?.name || (navigator.userAgent.includes('iPhone')?'iPhone':navigator.userAgent.includes('Mac')?'Mac':'PC')};
     const peers=await syncSetting<Peer[]>('peers') || [];this.update({available:true,enabled:this.config.enabled,name:this.config.name,autoSync:this.config.autoSync ?? true,peers});
     this.disconnect=window.guitarLan.onRequest?.((payload,deviceId)=>this.serve(payload,deviceId));
     this.wake=()=>{if(document.visibilityState==='visible')void this.run(true);};window.addEventListener('online',this.wake);document.addEventListener('visibilitychange',this.wake);
     this.changed=()=>this.schedule(1500);window.addEventListener('guitario:changed',this.changed);
-    setMissingContentLoader((kind,id)=>this.fetchContent(kind,id));await cleanTransfers();await this.configure();
+    setMissingContentLoader((kind,id)=>this.fetchContent(kind,id));await cleanTransfers();await this.repairContent();await this.configure();
     if(this.config.enabled)void this.run(true);
   }
   stop(){this.disposed=true;for(const upload of this.uploads.values()){if(upload.timer)clearTimeout(upload.timer);upload.reject(new Error('File sync stopped. Sync now will resume the download.'));}this.uploads.clear();if(this.pairingExpiry)clearTimeout(this.pairingExpiry);if(this.timer)clearTimeout(this.timer);this.disconnect?.();if(this.wake){window.removeEventListener('online',this.wake);document.removeEventListener('visibilitychange',this.wake);}if(this.changed)window.removeEventListener('guitario:changed',this.changed);setMissingContentLoader(undefined);}
@@ -48,20 +52,22 @@ export class SyncEngine {
   async resetCode(){if(!this.config)return;this.approvePair(false);this.config.secret=newSecret();const previous=this.config.pairingCode;do{this.config.pairingCode=shortCode();}while(this.config.pairingCode===previous);await this.configure();}
   async setAutoSync(value:boolean){if(!this.config)return;const previous=this.config.autoSync;this.config.autoSync=value;this.update({autoSync:value});try{await setSyncSetting('config',this.config);}catch(error){this.config.autoSync=previous;this.update({autoSync:previous ?? true});throw error;}if(value)await this.run(true);else if(this.timer)clearTimeout(this.timer);}
   approvePair(approve:boolean){if(this.pairingExpiry)clearTimeout(this.pairingExpiry);if(this.pairing&&approve&&this.pairing.expires>Date.now())this.pairing.approved=true;else this.pairing=undefined;this.update({incoming:undefined});}
-  async beginPair(code:string){
+  private async repairContent(){const result=await repairLocalContent();if(result.recovered.length)this.log('Local files',`Recovered ${result.recovered.length} originals/attachments without resetting metadata checkpoints.`);for(const problem of result.problems)this.log('Local file problem',problem,undefined,true);}
+  async beginPair(code:string,address=''){
     if(!this.config?.enabled||!window.guitarLan)throw new Error('Enable local sync first.');
     if(!/^\d{6}$/.test(code.trim()))throw new Error('Enter the six-digit code from your PC or Mac.');
     const status=await window.guitarLan.status(),matches=status.discovered.filter(p=>p.code===code.trim());
-    if(matches.length!==1)throw new Error(matches.length?'Two devices have this code. Reset one code and try again.':'Device not found. Enable local sync on both devices and connect them to the same Wi-Fi or LAN.');
-    const peer=matches[0],identity=await pairingIdentity(),requestId=crypto.randomUUID(),nonce=newSecret(),commit=await pairingCommit(identity.publicKey,nonce,requestId);let last:unknown;
-    for(const endpoint of peer.endpoints){try{
+    if(!address&&matches.length!==1)throw new Error(matches.length?'Two devices have this code. Reset one code and try again.':'[LAN-PAIR-001] Device not found. Use its LAN address below if discovery is unavailable.');
+    const peer=address?{id:'',name:address,endpoints:[directEndpoint(address)]}:matches[0],identity=await pairingIdentity(),requestId=crypto.randomUUID(),nonce=newSecret(),commit=await pairingCommit(identity.publicKey,nonce,requestId);let last:unknown;
+    for(const endpoint of rankEndpoints(peer.endpoints)){const started=Date.now();try{
       const answer:any=await window.guitarLan.request(endpoint,{op:'pair:init',code:code.trim(),requestId,name:this.config.name,commit});
-      if(answer.id!==peer.id||answer.requestId!==requestId)throw new Error('Pairing identity did not match.');
+      if(typeof answer.id!=='string'||!answer.id||answer.id===this.config.id||peer.id&&answer.id!==peer.id||answer.requestId!==requestId)throw new Error('Pairing identity did not match.');
       const reveal:any=await window.guitarLan.request(endpoint,{op:'pair:reveal',requestId,publicKey:identity.publicKey,nonce});
       if(await pairingCommit(reveal.publicKey,reveal.nonce,requestId)!==answer.commit)throw new Error('Pairing commitment did not match.');
       const session=await pairingSession(identity,reveal.publicKey,requestId,true);
-      return {id:peer.id,name:peer.name,endpoint,requestId,secret:session.secret,digits:session.digits};
-    }catch(e){last=e;this.log('Pairing failed',`${endpoint}: ${e instanceof Error?e.message:String(e)}`,peer.name,true);}}throw last;
+      this.log('Pairing connected',`${endpoint} · ${Date.now()-started} ms`,peer.name);
+      return {id:answer.id,name:peer.name,endpoint,requestId,secret:session.secret,digits:session.digits};
+    }catch(e){const failure=new Error(connectionProblem(e,endpoint));last=failure;this.log('Pairing endpoint',`${failure.message} · ${Date.now()-started} ms · Trying alternate endpoint`,peer.name,true);}}throw last;
   }
   async finishPair(session:{id:string;endpoint:string;requestId:string;secret:string}){
     if(!window.guitarLan)throw new Error('Local sync is unavailable.');
@@ -70,7 +76,7 @@ export class SyncEngine {
     if(!answer.approved)throw new Error('Confirm the matching digits on the other device, then try again.');
     const result=await open(session.secret,answer.body);
     if(result.requestId!==session.requestId||result.id!==session.id)throw new Error('Pairing identity did not match.');
-    await this.pair(result.code);
+    const paired=parsePairing(result.code);paired.endpoints=[session.endpoint,...paired.endpoints.filter((e:string)=>e!==session.endpoint)];await this.pair(pairingCode(paired));
   }
   async pair(code:string){const item=parsePairing(code);if(!this.config||!this.config.enabled)throw new Error('Enable local sync first.');if(item.id===this.config.id)throw new Error('This is this device’s own code.');const peer:Peer={id:item.id,name:item.name,secret:item.secret,endpoints:item.endpoints};const status=await window.guitarLan!.status();await this.call(peer,{op:'hello',peer:{id:this.config.id,name:this.config.name,secret:this.config.secret,endpoints:status.endpoints}});const peers=[...this.view.peers.filter(p=>p.id!==peer.id),peer];await setSyncSetting('peers',peers);this.update({peers,error:''});await this.run();}
   async remove(id:string){await setSyncSetting(`blocked:${id}`,true);const peers=this.view.peers.filter(p=>p.id!==id);await setSyncSetting('peers',peers);this.update({peers});}
@@ -83,13 +89,15 @@ export class SyncEngine {
   private async call(peer:Peer,payload:unknown):Promise<any>{
     if(!this.config||!window.guitarLan||!this.config.enabled)throw new Error('Local sync is off.');
     const native=await window.guitarLan.status();if(native.wifi===false)throw new Error('Connect to Wi-Fi or Ethernet to sync.');
-    const found=native.discovered.find(p=>p.id===peer.id),endpoints=[...new Set([...peer.endpoints,...(found?.endpoints || [])])].sort((a,b)=>Number(a.includes('169.254.'))-Number(b.includes('169.254.')));let last:unknown;
-    for(const endpoint of endpoints){let remoteError=false;try{const requestId=crypto.randomUUID(),body=await seal(peer.secret,{deviceId:this.config.id,requestId,at:Date.now(),payload});const encrypted=await window.guitarLan.request(endpoint,body);this.update({bytes:this.view.bytes+JSON.stringify(body).length+JSON.stringify(encrypted).length});const result=await open(peer.secret,encrypted);if(result.requestId!==requestId||result.deviceId!==peer.id)throw new Error('Device identity did not match.');peer.endpoints=[endpoint,...endpoints.filter(e=>e!==endpoint)];if(result.payload.error){remoteError=true;throw new Error(result.payload.error);}return result.payload;}catch(e){last=e;this.log('Connection',`${endpoint}: ${e instanceof Error?e.message:String(e)}`,peer.name,true);if(remoteError)throw e;}}
+    const found=native.discovered.find(p=>p.id===peer.id),endpoints=rankEndpoints([...peer.endpoints,...(found?.endpoints || [])]);let last:unknown;
+    for(const endpoint of endpoints){let remoteError=false;const started=Date.now();try{const requestId=crypto.randomUUID(),body=await seal(peer.secret,{deviceId:this.config.id,requestId,at:Date.now(),payload});const encrypted=await window.guitarLan.request(endpoint,body);this.update({bytes:this.view.bytes+JSON.stringify(body).length+JSON.stringify(encrypted).length});const result=await open(peer.secret,encrypted);if(result.requestId!==requestId||result.deviceId!==peer.id)throw new Error('Device identity did not match.');peer.endpoints=[endpoint,...endpoints.filter(e=>e!==endpoint)];if(result.payload.error){remoteError=true;throw new Error(result.payload.error);}return result.payload;}catch(e){last=e;this.log('Connection',`${endpoint}: ${e instanceof Error?e.message:String(e)} · ${Date.now()-started} ms`,peer.name,true);if(remoteError)throw e;}}
     throw last || new Error('Paired device is unavailable.');
   }
   async serve(payload:any,_deviceId:string){
     if(!this.config?.enabled)throw new Error('Local sync is off.');
     if(payload?.op==='pair:init'){
+      const existing=this.pairing;
+      if(existing&&existing.id===payload.requestId&&existing.commit===payload.commit&&existing.name===payload.name&&existing.expires>Date.now()&&payload.code===this.config.pairingCode)return {id:this.config.id,requestId:payload.requestId,commit:await pairingCommit(existing.identity!.publicKey,existing.nonce!,existing.id)};
       this.attempts=this.attempts.filter(at=>at>Date.now()-60000);
       if(this.attempts.length>=5)throw new Error('Too many pairing attempts. Wait a minute.');this.attempts.push(Date.now());
       if(payload.code!==this.config.pairingCode||typeof payload.name!=='string'||payload.name.length>100||this.pairing&&this.pairing.expires>Date.now())throw new Error('Pairing is unavailable.');
@@ -101,7 +109,7 @@ export class SyncEngine {
     }
     if(payload?.op==='pair:reveal'){
       const pending=this.pairing;
-      if(!pending||pending.id!==payload.requestId||pending.expires<=Date.now()||!pending.identity||pending.secret)throw new Error('Pairing expired.');
+      if(!pending||pending.id!==payload.requestId||pending.expires<=Date.now()||!pending.identity)throw new Error('Pairing expired.');
       if(await pairingCommit(payload.publicKey,payload.nonce,payload.requestId)!==pending.commit)throw new Error('Pairing commitment did not match.');
       const session=await pairingSession(pending.identity,payload.publicKey,payload.requestId,false);pending.secret=session.secret;
       this.update({incoming:{id:pending.id,name:pending.name,digits:session.digits}});
@@ -118,7 +126,8 @@ export class SyncEngine {
     }
     if(await syncSetting(`blocked:${_deviceId}`))throw new Error('This device was removed. Pair it again.');
     if(payload?.op==='hello' && payload.peer){if(payload.peer.id!==_deviceId)throw new Error('Invalid peer identity.');await this.rememberPeer(payload.peer);}
-    if(payload?.op==='hello'||payload?.op==='head')return {id:this.config.id,name:this.config.name,head:await syncHead(),ready:!this.updatePaused&&this.canApply(),protocol:2,contentUpload:true};
+    if(payload?.op==='hello'||payload?.op==='head')return {id:this.config.id,name:this.config.name,head:await syncHead(),ready:!this.updatePaused&&this.canApply(),protocol:3,contentUpload:true,contentManifest:true};
+    if(payload?.op==='content-manifest')return contentManifest(payload.after??'',payload.limit??100);
     if(payload?.op==='changes')return syncPage(payload.after,payload.limit);
     if(payload?.op==='baselines')return {rows:await syncBaselines(payload.keys)};
     if(payload?.op==='blob'){if(!['source','asset'].includes(payload.kind)||typeof payload.id!=='string'||payload.id.length>200)throw new Error('Invalid content request.');return contentChunk(payload.kind,payload.id,payload.offset);}
@@ -126,7 +135,7 @@ export class SyncEngine {
       if(payload.after!==undefined && (typeof payload.after!=='string'||payload.after.length>210))throw new Error('Invalid file checkpoint.');
       await initializeContentQueue();
       for(const [key,item] of this.uploads)if(item.updatedAt<Date.now()-120000){if(item.timer)clearTimeout(item.timer);item.reject(new Error('File upload was interrupted. Use Sync now to resume.'));this.uploads.delete(key);}
-      const pending=(await pendingSyncContent()).filter(item=>`${item.kind}/${item.id}`>(payload.after || '')),page=pending.slice(0,100);
+      const pending=(await pendingSyncContent()).sort((a,b)=>`${a.kind}/${a.id}`<`${b.kind}/${b.id}`?-1:1).filter(item=>`${item.kind}/${item.id}`>(payload.after || '')),page=pending.slice(0,100);
       return {files:await Promise.all(page.map(async item=>({...item,offset:this.uploads.get(`${item.kind}/${item.id}`)?.offset || (await transferProgress(`${item.kind}/${item.id}`))?.offset || 0}))),more:pending.length>page.length};
     }
     if(payload?.op==='put-blob'){
@@ -138,23 +147,47 @@ export class SyncEngine {
   }
   async run(automatic=false){
     if(automatic&&!this.view.autoSync)return;
-    if(this.disposed||this.updatePaused||this.busy)return;this.busy=true;
+    if(this.disposed||this.updatePaused||this.busy)return;this.busy=true;let checkpointsComplete=true;
     try{
       if(!this.config?.enabled||document.visibilityState==='hidden'&&document.documentElement.classList.contains('native-ios')){return;}
-      await initializeContentQueue();this.update({busy:true,error:'',pendingFiles:(await pendingSyncContent()).length,waiting:!this.canApply(),stage:'Checking device revisions'});this.log('Check',automatic?'Background revision check.':'Manual revision check.');
+      this.update({busy:true,offlineComplete:false,stage:'Checking local files'});if(!automatic)await this.repairContent();else await initializeContentQueue();this.update({error:'',pendingFiles:(await pendingSyncContent()).length,waiting:!this.canApply(),stage:'Checking device revisions'});this.log('Check',automatic?'Background revision check.':'Manual revision check.');
       for(const peer of this.view.peers){if(peer.clientOnly)continue;try{
         const remote=await this.call(peer,{op:'head'}),after=Number(await syncSetting<number>(`pull:${peer.id}`)) || 0;
-        if(after>remote.head)throw new Error('This device was reset. Remove it and pair it again.');
+        if(!Number.isSafeInteger(remote.head)||remote.head<0)throw Error('Invalid peer head.');if(after>remote.head)throw new Error('This device was reset. Remove it and pair it again.');
         if(this.canApply()){
-          let cursor=after,pages=0;while(cursor<remote.head && pages++<20){this.update({stage:`Receiving metadata from ${peer.name} · revision ${cursor}`});const page=await this.call(peer,{op:'changes',after:cursor,limit:100});if(!Number.isSafeInteger(page.cursor)||page.cursor<=cursor||page.cursor>page.head)throw new Error('Invalid peer checkpoint.');let rows=validateSyncRows(page.rows);const needs=await missingSyncBases(rows);if(needs.length){if(remote.protocol!==2)throw new Error('Update both paired apps to V1.4.3 or later to repair missing song metadata.');const bases:SyncRow[]=[];for(let i=0;i<needs.length;i+=20){const answer=await this.call(peer,{op:'baselines',keys:needs.slice(i,i+20)});bases.push(...validateSyncRows(answer.rows));}rows=withSyncBaselines(rows,bases);if(await missingSyncBases(rows).then(keys=>keys.length))throw new Error('Paired device did not provide the requested base records.');this.log('Metadata repair',`Fetched ${needs.length} missing base records without tab or audio bytes.`,peer.name);}const accepted=await applySyncPage(rows,{peer:peer.id,cursor:page.cursor});cursor=page.cursor;if(accepted){this.applied();this.logRows('Received',rows,accepted,peer.name);}if(!page.more)break;}
+          let cursor=after,pages=0;while(cursor<remote.head && pages++<20){this.update({stage:`Receiving metadata from ${peer.name} · revision ${cursor}`});const page=await this.call(peer,{op:'changes',after:cursor,limit:remote.contentManifest===true?500:100});if(!Number.isSafeInteger(page.cursor)||page.cursor<=cursor||page.cursor>page.head)throw new Error('Invalid peer checkpoint.');let rows=validateSyncRows(page.rows);const needs=await missingSyncBases(rows);if(needs.length){if((Number(remote.protocol)||0)<2)throw new Error('Update both paired apps to V1.4.3 or later to repair missing song metadata.');const bases:SyncRow[]=[];for(let i=0;i<needs.length;i+=20){const answer=await this.call(peer,{op:'baselines',keys:needs.slice(i,i+20)});bases.push(...validateSyncRows(answer.rows));}rows=withSyncBaselines(rows,bases);if(await missingSyncBases(rows).then(keys=>keys.length))throw new Error('Paired device did not provide the requested base records.');this.log('Metadata repair',`Fetched ${needs.length} missing base records without tab or audio bytes.`,peer.name);}const accepted=await applySyncPage(rows,{peer:peer.id,cursor:page.cursor});cursor=page.cursor;if(accepted){this.applied();this.logRows('Received',rows,accepted,peer.name);}if(!page.more)break;}
         }
-        if(remote.ready){let sent=Number(await syncSetting<number>(`push:${peer.id}`)) || 0,pages=0;const head=await syncHead();while(sent<head&&pages++<20){this.update({stage:`Sending metadata to ${peer.name} · revision ${sent}`});const page=await syncPage(sent);let rows=page.rows;if(remote.protocol!==2)rows=await syncBaselines(rows.map(row=>row.key));let result=await this.call(peer,{op:'apply',rows});if(result.needs){rows=withSyncBaselines(rows,await syncBaselines(result.needs));result=await this.call(peer,{op:'apply',rows});}if(result.busy){this.log('Waiting',`${peer.name} is editing a song. Updates will resume from revision ${sent}.`,peer.name);break;}if(result.needs||!Number.isSafeInteger(result.accepted))throw new Error('Paired device did not acknowledge the metadata batch.');sent=page.cursor;await setSyncSetting(`push:${peer.id}`,sent);this.logRows('Sent',rows,result.accepted,peer.name);}}
+        if(remote.ready){let sent=Number(await syncSetting<number>(`push:${peer.id}`)) || 0,pages=0;const head=await syncHead();while(sent<head&&pages++<20){this.update({stage:`Sending metadata to ${peer.name} · revision ${sent}`});const page=await syncPage(sent);let rows=page.rows;if((Number(remote.protocol)||0)<2)rows=await syncBaselines(rows.map(row=>row.key));let result=await this.call(peer,{op:'apply',rows});if(result.needs){rows=withSyncBaselines(rows,await syncBaselines(result.needs));result=await this.call(peer,{op:'apply',rows});}if(result.busy){this.log('Waiting',`${peer.name} is editing a song. Updates will resume from revision ${sent}.`,peer.name);break;}if(result.needs||!Number.isSafeInteger(result.accepted))throw new Error('Paired device did not acknowledge the metadata batch.');sent=page.cursor;await setSyncSetting(`push:${peer.id}`,sent);this.logRows('Sent',rows,result.accepted,peer.name);}}
+        if(remote.contentManifest===true&&this.canApply())await this.reconcileManifest(peer);
         if(remote.ready&&remote.contentUpload===true)await this.uploadPendingContent(peer);
-        peer.lastSync=new Date().toISOString();peer.error='';this.log('Checked','Revision check completed.',peer.name);
+        if(Number(await syncSetting(`pull:${peer.id}`)||0)!==remote.head||remote.ready&&Number(await syncSetting(`push:${peer.id}`)||0)<await syncHead())checkpointsComplete=false;peer.lastSync=new Date().toISOString();peer.error='';this.log('Checked','Revision check completed.',peer.name);
       }catch(error){peer.error=error instanceof Error?error.message:String(error);this.log('Sync failed',peer.error,peer.name,true);}}
       if(this.canApply() && this.view.enabled && !this.disposed && !this.updatePaused)await this.downloadPendingContent();
+      const audit=await auditOfflineContent(),metadataPending=!checkpointsComplete||this.view.peers.some(p=>!!p.error)||!this.canApply();
+      if(!audit.complete&&!this.view.error)this.update({error:`[LAN-FILE-002] Offline library is incomplete: ${audit.missingSources.length} GP files and ${audit.missingArtwork.length} artwork files missing; ${audit.pending} transfers queued. Keep a paired device containing the originals awake.`});
+      this.update({offlineComplete:audit.complete&&!metadataPending,pendingFiles:audit.pending});
       await setSyncSetting('peers',this.view.peers);this.update({peers:[...this.view.peers],lastSync:new Date().toISOString()});
     }catch(e){this.update({error:String(e)});this.log('Sync failed',String(e),undefined,true);}finally{this.busy=false;this.update({busy:false,stage:this.view.error||this.view.peers.some(p=>p.error)?'Needs attention':this.view.pendingFiles?'Waiting for files':'Idle'});const errors=!!this.view.error||this.view.peers.some(p=>p.error);this.schedule(errors?60000:30000);}
+  }
+  private async reconcileManifest(peer:Peer){
+    let after='';const needed=new Set((await pendingSyncContent()).map(item=>`${item.kind}/${item.id}`));
+    for(let page=0;page<1000;page++){
+      const answer=await this.call(peer,{op:'content-manifest',after,limit:100});
+      if(!Array.isArray(answer.items)||answer.items.length>100||typeof answer.more!=='boolean')throw Error('Invalid content manifest.');
+      const missing:string[]=[];
+      for(const item of answer.items){
+        if(!item||!['source','asset'].includes(item.kind)||typeof item.id!=='string'||!item.id||item.id.length>200||item.key!==`${item.kind}/${item.id}`||item.key<=after||typeof item.available!=='boolean'||!Number.isSafeInteger(item.byteLength)||item.byteLength<0||typeof item.hash!=='string')throw Error('Invalid content manifest item.');
+        after=item.key;const local=await contentRecord(item.kind,item.id);
+        if(!local&&!needed.has(item.key))continue;
+        if(!local||(item.kind==='source'?!local.source:!local.blob)){needed.add(item.key);await setSyncSetting(`pending-content:${item.key}`,{kind:item.kind,id:item.id,name:item.name||item.id,byteLength:item.byteLength});}
+        if(item.available===false&&needed.has(item.key))this.log('Source missing',`[LAN-FILE-003] ${item.name||item.id}: ${peer.name} has metadata but not the original file.`,peer.name,true,item.key);
+        if(!local||!local.byteLength||item.kind==='source'&&!local.hash)missing.push(item.key);
+      }
+      if(answer.after!==after)throw Error('Invalid content manifest checkpoint.');
+      if(missing.length){const bases=await this.call(peer,{op:'baselines',keys:missing});await applySyncPage(bases.rows);}
+      if(!answer.more)return;if(!answer.items.length)throw Error('Invalid content manifest checkpoint.');
+    }
+    throw Error('Content manifest is too large.');
   }
   /** Foreground clients (including iOS) send files to desktop hosts. The
    * optional capability keeps metadata/blob requests compatible with V1.5. */
@@ -231,7 +264,7 @@ export class SyncEngine {
     await Promise.all([worker(),worker()]);
     const remaining=(await pendingSyncContent()).length;
     this.update({pendingFiles:remaining,error:failures.length&&remaining?`${remaining} file${remaining===1?'':'s'} still need downloading. Keep the paired source device awake and use Sync now to retry. ${failures[0]}`:''});
-    this.log('Files',remaining?`${remaining} files still pending.`:'All files are saved on this device.',undefined,!!failures.length);
+    this.log('Files',remaining?`${remaining} files still pending.`:'Queued downloads finished. Checking all library references.',undefined,!!failures.length);
   }
   private logRows(stage:string,rows:SyncRow[],accepted:number,peer?:string){const songs=rows.filter(r=>r.entity==='song'),activity=songs.filter(r=>'lastPlayedAt' in (r.patch || {}));this.log(stage,`${accepted} changed records; ${songs.length} songs; ${activity.length} playback history updates.`,peer);for(const row of songs)this.log(stage,String(row.patch?.title || row.entityId)+(row.operation==='delete'?' · deleted':''),peer,false,row.key);}
   async fetchContent(kind:'source'|'asset',id:string){
@@ -242,11 +275,11 @@ export class SyncEngine {
   }
   private async downloadContent(kind:'source'|'asset',id:string){
     if(!this.view.enabled)throw new Error('Enable local sync and connect a paired device to download this file.');
-    const record=await contentRecord(kind,id);if(record && (kind==='source'?record.source:record.blob)){await clearPendingContent(kind,id);return;}if(!record){await clearPendingContent(kind,id);this.log('File unavailable',`${kind}/${id}: no attachment metadata received yet.`,undefined,true,`${kind}/${id}`);throw new Error('File metadata has not arrived yet. Sync both devices and try again.');}
+    const record=await contentRecord(kind,id);if(record && (kind==='source'?record.source:record.blob)){await clearPendingContent(kind,id);return;}if(!record){this.log('File unavailable',`${kind}/${id}: no attachment metadata received yet.`,undefined,true,`${kind}/${id}`);throw new Error('File metadata has not arrived yet. Sync both devices and try again.');}
     this.log('Download',`${record.name || id} · ${kind}`,undefined,false,`${kind}/${id}`);
     const key=`${kind}/${id}`,saved=await transferProgress(key),parts:Uint8Array[]=saved?await transferChunks(key):[];let offset=parts.reduce((n,p)=>n+p.length,0),size=saved?.size || Number(record.byteLength)||0;let last:unknown;
     for(const peer of this.view.peers.filter(p=>!p.clientOnly)){try{
-      while(!size||offset<size){if(this.disposed||this.updatePaused||!this.view.enabled)throw new Error('File sync was paused. Sync now will resume the download.');const chunk=await this.call(peer,{op:'blob',kind,id,offset}),part=unbase64(chunk.bytes);if(chunk.offset!==offset||!Number.isSafeInteger(chunk.size)||chunk.size<=0||chunk.size>(kind==='source'?30:250)*1024*1024||part.length>512*1024||!part.length||offset+part.length>chunk.size||size && size!==chunk.size)throw new Error('Invalid file chunk.');size=chunk.size;parts.push(part);if(offset+part.length<=64*1024*1024)await storeTransfer(key,part,offset,size);offset+=part.length;}
+      while(!size||offset<size){if(this.disposed||this.updatePaused||!this.view.enabled)throw new Error('File sync was paused. Sync now will resume the download.');const chunk=await this.call(peer,{op:'blob',kind,id,offset}),part=unbase64(chunk.bytes);if(chunk.offset!==offset||!Number.isSafeInteger(chunk.size)||chunk.size<=0||chunk.size>(kind==='source'?30:250)*1024*1024||part.length>512*1024||!part.length||offset+part.length>chunk.size||size && size!==chunk.size)throw new Error('Invalid file chunk.');if(record.hash&&chunk.hash&&chunk.hash!==record.hash)throw Error('Source checksum differs from library metadata.');size=chunk.size;parts.push(part);if(offset+part.length<=64*1024*1024)await storeTransfer(key,part,offset,size);offset+=part.length;}
       await finishTransfer(kind,id,new Blob(parts as BlobPart[]));this.log('Downloaded',`${record.name || id} · ${offset} bytes`,peer.name,false,key);window.dispatchEvent(new CustomEvent('guitario:content-ready',{detail:{kind,id}}));return;
     }catch(error){last=error;const retained=await transferProgress(key);if(!retained){parts.length=0;offset=0;}this.log('Download failed',`${record.name || id} · ${error instanceof Error?error.message:String(error)}`,peer.name,true,key);}}
     throw new Error('The file is not available from an awake paired device. '+(last instanceof Error?last.message:''));

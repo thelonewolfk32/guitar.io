@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Download } from 'lucide-react';
 import type { SongsterrImportResult, SongsterrSyncResult } from './songsterr-score';
 
-declare global { interface Window { guitarIO?: { lookupSongTempo:(song:{title:string;artist:string;album?:string;bpm:number})=>Promise<import('./types').OnlineTempo | undefined>; downloadSongsterr: (url: string) => Promise<SongsterrImportResult>; songsterrSync:(url:string)=>Promise<SongsterrSyncResult>; youtubeRate?:(videoId:string,rate:number,request:number)=>Promise<number>; openLearn:(id:string)=>Promise<void>; updateLearn:(id:string)=>void; onLearnContext:(callback:(id:string)=>void)=>()=>void } } }
+declare global { interface Window { guitarIO?: { lookupSongTempo:(song:{title:string;artist:string;album?:string;bpm:number})=>Promise<import('./types').OnlineTempo | undefined>; downloadSongsterr: (url: string) => Promise<SongsterrImportResult>; songsterrSync:(url:string)=>Promise<SongsterrSyncResult>; youtubeRate?:(videoId:string,rate:number,request:number)=>Promise<number>; openLearn:(id:string,scope?:string)=>Promise<void>; updateLearn:(id:string,scope?:string)=>void; onLearnContext:(callback:(id:string)=>void)=>()=>void } } }
 
 export default function SongsterrImport({ onImport, disabled }: { onImport:(data:SongsterrImportResult) => Promise<void>; disabled:boolean }) {
   const [url,setUrl] = useState(''), [busy,setBusy] = useState(false), [error,setError] = useState('');

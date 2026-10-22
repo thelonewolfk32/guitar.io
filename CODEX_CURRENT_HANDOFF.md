@@ -1,25 +1,26 @@
-# Guitar.io V1.5.1 complete-file sync
+# Current Guitar.io handoff — V1.6
 
-Current source is 1.5.1/build 151, based on commit c7701cf and identified for release by tag v1.5.1. [Desktop releases](https://github.com/thelonewolfk32/guitar.io/releases/latest) are published through the checked Actions workflow. Read [SYNC_FIX_HANDOFF.md](SYNC_FIX_HANDOFF.md), [CHANGELOG-v1.5.1.md](CHANGELOG-v1.5.1.md) and [VALIDATION-v1.5.1.md](VALIDATION-v1.5.1.md) for the new complete-file sync and actual native-test limits. The V1.5.0 text below is the published baseline history; its on-open-only sync behaviour is superseded by the 1.5.1 queue.
+22 October 2026: the owner requested and explicitly authorised a normal desktop release for the build-161 LAN handoff. DESKTOP_SYNC_HANDOFF.md describes protocol-3 manifests, local file registration, durable queue repair and independent desktop hosting. This supersedes the earlier desktop hold below. Preserve the newer iOS work on the owner's Mac; this repository does not contain all those unshared changes.
 
-# Guitar.io V1.5.0
+Read AGENTS.md, MONETISATION.md, PC_SETUP.md, HOSTED_SERVICES.md, OWNER_SETUP.md, PRIVACY.md and IOS_REACT_NATIVE_HANDOFF.md.
 
-Published baseline: tag `v1.5.0`, commit `d891480`, https://github.com/thelonewolfk32/guitar.io/releases/tag/v1.5.0. Active source in the original Windows workspace is `development/guitar-io`; a GitHub clone has `package.json` at its root. Stable local Windows installation: Guitar.io.exe directly in the main workspace; preserve development/, resources/ and locales/. Generated Windows/Mac/Source ZIPs and checksums: release/artifacts in source. Runtime: pinned Electron 44.4.5 dependency; no old-version baselines required. Old packages/reference source/cache and old release notes removed from current workspace; history remains in Git and immutable GitHub Releases. Preserve real profile C:/Users/nkend/AppData/Roaming/Guitar.io and the existing Mac Application Support/Guitar.io profile.
+The user approved free Supabase cloud sync, five saved entries on Free, Premium automation/YouTube/unlimited song count, no ads, React Native Apple development, teacher foundations, owner administration, feedback and opt-in aggregate usage.
 
-Windows hidden Start-Process restart caused an invisible lock-holding app, so older EXEs also could not appear. Restart now uses Normal; second-instance and ready-to-show explicitly show the window. Update success requires renderer/library activation and a native window, with 90-second startup deadline and rollback. Startup failures pause automatic reinstallation. Metadata load alone does not mark activated. Mac retains rollback until renderer activation, with existing canonical local signing.
+The working tree includes the earlier unpublished V1.5.2 deletion/onboarding/update/private-feed groundwork and the new V1.6 implementation. Preserve prior fixes and private-data boundaries. Last previously published version was V1.5.1. See VALIDATION-v1.6.0.md for actual final verification and publication status.
 
-Update availability reads SyncEngine.view.busy live; stale cached React boolean previously blocked idle installs. Preparation pauses new sync applies/transfers, drains in-flight work and flushes committed IndexedDB. Force only closes open views/sync after confirmation; active imports/saves/loading remain hard blockers. Manual check downloads and waits for Install update, even when Auto ON; interval checks the live manual flag. Launch checks always run even when Auto OFF. A light-green download-only header icon opens the same minimal settings menu.
+Key changes:
+- Shared capabilities/limits/expiry/grant sources; independent owner gifts and server-enforced song/storage limits.
+- Account-separated desktop workspaces, active/archive selection, durable failed import drafts and pending shared-song entries.
+- Foreground automatic cloud sync with complete GP/attachment downloads and retry queues.
+- Explicit rhythm rendering and persistent section-colour preference.
+- React Native mobile source, SQLite/files, Keychain, native bridges, migration, sharing, cloud/LAN clients and a bundled score workspace.
+- Private owner web dashboard with MFA, gifts, extra limits, enterprise/beta eligibility, feedback and aggregate reports.
+- Private learning event storage and future organisation/assignment/consent types; teacher dashboards and enterprise billing remain future work.
+- Stripe/RevenueCat integration remains configuration-dependent. No live accounts, project, staging deployment or purchases have been created.
 
-Full-version ZIPs support skipped releases. Native packaged Windows tests cover actual V1.4.4 installer -> V1.5.0, manual/force flow and failed-startup rollback with visible windows and preserved isolated library. npm test (serial), typecheck and production build. test:updater-desktop runs tests/v150-updater-desktop.mjs; workflow gates publication on that Windows test plus macOS 15/26 signing smoke. MacBook interactive Gatekeeper/playback testing is separate. Apple Silicon / Sequoia 15; no Developer membership. No iOS build in this release.
+The user confirmed there is no Supabase project and requested the local setup package. Do not report hosted acceptance or an installable iOS build without actually completing those checks.
 
-Public GitHub repository thelonewolfk32/guitar.io is authorised for source/release publication. V1.5.0 is already published: do not recreate its tag or overwrite its ZIPs. Future functional releases use a new increasing version and the existing workflow after checks. Credentials and profile files stay outside Git/public artifacts.
+## iOS-first continuation (18 October 2026)
+The first release gate is the owner's free-signing iPhone refresh. Read IOS_FIRST_RELEASE.md and the revised IOS_REACT_NATIVE_HANDOFF.md first. `--profile local` removes paid Apple capabilities; `--profile full` enables them after enrolment. Native Google/Apple plus Supabase Auth SDK/Keychain, desktop system-browser PKCE, recovery, full native/legacy backup restore, upload leases, seven-day GC, R2 recovery tooling, operational alerts and recent-auth/provider-revoked account deletion are prepared. Source packaging now points to React Native, not the retained Capacitor project.
 
-## Mac/iPhone continuation from V1.5
-
-Read [IOS_HANDOFF.md](IOS_HANDOFF.md) for a tool-independent setup, Xcode MCP commands, GitHub authentication, native test checklist and a copyable starting prompt. [AGENTS.md](AGENTS.md) supplies persistent project context to coding tools that support it. GitHub source updates, desktop ZIP updates and private-library LAN sync are separate paths.
-
-The existing Capacitor 8.5.2 project is `ios/App/App.xcodeproj`, scheme App, iOS 16.0+ with custom GuitarLocalPlugin/GuitarViewController. Native metadata is now 1.5.0/build 150. Generated web assets are not tracked; run `npm ci` and `npm run ios:sync` on the Mac before Xcode builds, and refresh after web edits. No Swift/native build or new desktop package was produced for this handover. An old project ZIP would load stale assets.
-
-Use the same shared React/TypeScript app and LAN protocol with V1.5 desktops. Keep IndexedDB guitar-io-v1/schema 4, current origins, device identities, per-peer pull/push checkpoints, atomic apply, missing-base repair, recent activity and lazy bytes. iOS is a desktop client with foreground/resume sync, not a continuously running host. Actual phone playback, file import/export, YouTube, native transport and touch layout remain pending Mac/iPhone checks.
-
-User has Apple Silicon, last reported Sequoia 15, and no paid Developer membership. Verify macOS/iPhone versions before choosing compatible Xcode 26.3+ for its MCP bridge. Use Personal Team for a seven-day personal test install; TestFlight later requires membership. Keep the desktop updater out of native iOS. Continue functional iOS work on a branch while leaving the shipped V1.5 desktop release intact.
+No Supabase project exists. Provision Free staging first, then separate Pro production; Google/email precede full Apple/TestFlight. Use temporary owner Premium gifts before sandbox purchases. The R2/maintenance workflow is disabled until its protected environment/secrets and enable variable exist. Hosted restoration and physical iPhone checks are release gates, never inferred from local fixtures or unsigned CI. Keep the stable desktop release unpublished until after the iOS gates.

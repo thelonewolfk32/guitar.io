@@ -1,0 +1,43 @@
+name: Private cloud maintenance and R2 recovery points
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      backup:
+        description: Create a verified recovery point now
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: guitario-production-operations
+  cancel-in-progress: false
+jobs:
+  operations:
+    if: vars.GUITARIO_OPS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment: guitario-production-operations
+    timeout-minutes: 90
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      MAINTENANCE_SECRET: ${{ secrets.MAINTENANCE_SECRET }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_BACKUP_BUCKET: ${{ secrets.R2_BACKUP_BUCKET }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node scripts/cloud-maintenance.mjs
+      - run: node scripts/cloud-backup.mjs ledger
+      - name: Daily incremental original-file backup and database recovery point
+        run: node scripts/cloud-backup.mjs ${{ inputs.backup && 'backup' || 'backup-if-due' }}
+# No customer data is uploaded as a GitHub artifact. The job is disabled until
+# credentials and GUITARIO_OPS_ENABLED are configured by the owner.

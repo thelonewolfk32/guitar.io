@@ -1,0 +1,24 @@
+{
+  "extends": "@react-native/typescript-config",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/Pods"
+  ],
+  "compilerOptions": {
+    "types": [
+      "react",
+      "react-native"
+    ],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
+    "skipLibCheck": true,
+    "noUncheckedIndexedAccess": false,
+    "ignoreDeprecations": "6.0"
+  }
+}

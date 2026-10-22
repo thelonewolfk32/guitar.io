@@ -1,3 +1,5 @@
+import {account} from './account';
+import {featureAccess} from './plans';
 import { useEffect, useRef, useState, useMemo, type ReactNode } from 'react';
 import type { AlphaTabApi } from '@coderline/alphatab';
 import { Plus, Pencil, Headphones, Upload, Youtube, Check, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
@@ -34,6 +36,8 @@ export default function MediaPanel(p: Props) {
   const instructionalRequest = useRef(0);
   const latest = useRef(p); latest.current = p;
   const recordings = recordingsFor(p.song);
+  const canYouTube=featureAccess(account.entitlement).youtubeSync;
+  useEffect(()=>{if(!canYouTube&&['youtube','instructional'].includes(p.source)){p.api?.pause();p.setSource('synth');setError('Premium includes synchronised YouTube playback.');}},[canYouTube,p.source]);
   const instructional=p.source==='instructional';
   const media = p.source === 'synth' ? undefined : recordings.find(r => r.id === activeId && (instructional ? r.kind==='youtube' && r.purpose==='instructional' : r.kind === p.source && r.purpose!=='instructional'));
   useEffect(()=>{p.onInstructionalChange(instructional?media?.id || '':'');},[instructional,media?.id]);
@@ -163,11 +167,13 @@ export default function MediaPanel(p: Props) {
   }, [p.api, p.source, audioReady, audioUrl, ytAdapter, media?.id, media?.offsetSeconds,media?.onlineTempo?.bpm,media?.onlineTempo?.enabled,media?.youtubeSync]);
 
   function selectRecording(id: string) {
+    const target=recordings.find(r=>r.id===id);if(target?.kind==='youtube'&&!featureAccess(account.entitlement).youtubeSync){setError('Premium includes synchronised YouTube playback.');return;}
     instructionalRequest.current=p.instructionalSeek?.request || 0;
     p.api?.pause(); setError(''); setActiveId(id);
     const recording=recordings.find(r=>r.id===id);p.setSource(recording?.purpose==='instructional'?'instructional':recording?.kind || 'synth');
   }
   async function addRecording(recording: Recording, assets: Asset[] = []) {
+    if(recording.kind==='youtube'&&!featureAccess(account.entitlement).youtubeSync){setError('Premium includes synchronised YouTube playback.');return;}
     if (recordings.length >= 200) { setError('A song can hold up to 200 recordings. Remove an unused version first.'); return; }
     setBusy(true); setError(''); selectRecording('synth');
     try {
@@ -178,7 +184,7 @@ export default function MediaPanel(p: Props) {
   }
   async function saveAudio(file: File) {
     if(instructional || purpose==='Instructional video'){setError('Instructional videos use YouTube links.');return;}
-    if (!/\.mp3$/i.test(file.name) || file.size > 100 * 1024 * 1024) { setError('Choose an MP3 smaller than 100 MB.'); return; }
+    if (!/\.mp3$/i.test(file.name) || file.size > 30 * 1024 * 1024) { setError('Choose an MP3 smaller than 30 MB.'); return; }
     const asset: Asset = { id: crypto.randomUUID(), kind: 'audio', name: file.name, mime: 'audio/mpeg', blob: new Blob([file], { type: 'audio/mpeg' }) };
     await addRecording({ id: crypto.randomUUID(), kind: 'audio', assetId: asset.id, name: file.name, label: recordingLabel(), tags: [], offsetSeconds: 0, purpose: purpose==='Backing track'?'backing':'full' }, [asset]);
   }

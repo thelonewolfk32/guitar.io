@@ -30,9 +30,9 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/dns-equal.js
+// node_modules/bonjour-service/dist/lib/utils/dns-equal.js
 var require_dns_equal = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/dns-equal.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/utils/dns-equal.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.default = dnsEqual;
@@ -48,9 +48,9 @@ var require_dns_equal = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/dns-txt.js
+// node_modules/bonjour-service/dist/lib/dns-txt.js
 var require_dns_txt = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/dns-txt.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/dns-txt.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.DnsTxt = void 0;
@@ -91,9 +91,9 @@ var require_dns_txt = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/service-types.js
+// node_modules/bonjour-service/dist/lib/service-types.js
 var require_service_types = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/service-types.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/service-types.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.toType = exports2.toString = void 0;
@@ -146,9 +146,9 @@ var require_service_types = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/service.js
+// node_modules/bonjour-service/dist/lib/service.js
 var require_service = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/service.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/service.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -281,9 +281,9 @@ var require_service = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/registry.js
+// node_modules/bonjour-service/dist/lib/registry.js
 var require_registry = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/registry.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/registry.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -428,9 +428,9 @@ var require_registry = __commonJS({
   }
 });
 
-// node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/types.js
+// node_modules/dns-packet/types.js
 var require_types = __commonJS({
-  "node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/types.js"(exports2) {
+  "node_modules/dns-packet/types.js"(exports2) {
     "use strict";
     exports2.toString = function(type) {
       switch (type) {
@@ -624,9 +624,9 @@ var require_types = __commonJS({
   }
 });
 
-// node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/rcodes.js
+// node_modules/dns-packet/rcodes.js
 var require_rcodes = __commonJS({
-  "node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/rcodes.js"(exports2) {
+  "node_modules/dns-packet/rcodes.js"(exports2) {
     "use strict";
     exports2.toString = function(rcode) {
       switch (rcode) {
@@ -705,9 +705,9 @@ var require_rcodes = __commonJS({
   }
 });
 
-// node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/opcodes.js
+// node_modules/dns-packet/opcodes.js
 var require_opcodes = __commonJS({
-  "node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/opcodes.js"(exports2) {
+  "node_modules/dns-packet/opcodes.js"(exports2) {
     "use strict";
     exports2.toString = function(opcode) {
       switch (opcode) {
@@ -786,9 +786,9 @@ var require_opcodes = __commonJS({
   }
 });
 
-// node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/classes.js
+// node_modules/dns-packet/classes.js
 var require_classes = __commonJS({
-  "node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/classes.js"(exports2) {
+  "node_modules/dns-packet/classes.js"(exports2) {
     "use strict";
     exports2.toString = function(klass) {
       switch (klass) {
@@ -823,9 +823,9 @@ var require_classes = __commonJS({
   }
 });
 
-// node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/optioncodes.js
+// node_modules/dns-packet/optioncodes.js
 var require_optioncodes = __commonJS({
-  "node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/optioncodes.js"(exports2) {
+  "node_modules/dns-packet/optioncodes.js"(exports2) {
     "use strict";
     exports2.toString = function(type) {
       switch (type) {
@@ -917,9 +917,9 @@ var require_optioncodes = __commonJS({
   }
 });
 
-// node_modules/.pnpm/@leichtgewicht+ip-codec@2.0.5/node_modules/@leichtgewicht/ip-codec/index.cjs
+// node_modules/@leichtgewicht/ip-codec/index.cjs
 var require_ip_codec = __commonJS({
-  "node_modules/.pnpm/@leichtgewicht+ip-codec@2.0.5/node_modules/@leichtgewicht/ip-codec/index.cjs"(exports2, module2) {
+  "node_modules/@leichtgewicht/ip-codec/index.cjs"(exports2, module2) {
     var ipCodec = (function(exports3) {
       "use strict";
       Object.defineProperty(exports3, "__esModule", {
@@ -1110,9 +1110,9 @@ var require_ip_codec = __commonJS({
   }
 });
 
-// node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/index.js
+// node_modules/dns-packet/index.js
 var require_dns_packet = __commonJS({
-  "node_modules/.pnpm/dns-packet@5.6.1/node_modules/dns-packet/index.js"(exports2) {
+  "node_modules/dns-packet/index.js"(exports2) {
     "use strict";
     var Buffer2 = require("buffer").Buffer;
     var types = require_types();
@@ -2538,9 +2538,9 @@ var require_dns_packet = __commonJS({
   }
 });
 
-// node_modules/.pnpm/thunky@1.1.0/node_modules/thunky/index.js
+// node_modules/thunky/index.js
 var require_thunky = __commonJS({
-  "node_modules/.pnpm/thunky@1.1.0/node_modules/thunky/index.js"(exports2, module2) {
+  "node_modules/thunky/index.js"(exports2, module2) {
     "use strict";
     var nextTick = nextTickArgs;
     process.nextTick(upgrade, 42);
@@ -2587,9 +2587,9 @@ var require_thunky = __commonJS({
   }
 });
 
-// node_modules/.pnpm/multicast-dns@7.2.5/node_modules/multicast-dns/index.js
+// node_modules/multicast-dns/index.js
 var require_multicast_dns = __commonJS({
-  "node_modules/.pnpm/multicast-dns@7.2.5/node_modules/multicast-dns/index.js"(exports2, module2) {
+  "node_modules/multicast-dns/index.js"(exports2, module2) {
     var packet = require_dns_packet();
     var dgram = require("dgram");
     var thunky = require_thunky();
@@ -2760,9 +2760,9 @@ var require_multicast_dns = __commonJS({
   }
 });
 
-// node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/es6/index.js
+// node_modules/fast-deep-equal/es6/index.js
 var require_es6 = __commonJS({
-  "node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/es6/index.js"(exports2, module2) {
+  "node_modules/fast-deep-equal/es6/index.js"(exports2, module2) {
     "use strict";
     module2.exports = function equal(a, b) {
       if (a === b) return true;
@@ -2816,9 +2816,9 @@ var require_es6 = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/mdns-server.js
+// node_modules/bonjour-service/dist/lib/mdns-server.js
 var require_mdns_server = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/mdns-server.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/mdns-server.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -2927,9 +2927,9 @@ var require_mdns_server = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/filter-service.js
+// node_modules/bonjour-service/dist/lib/utils/filter-service.js
 var require_filter_service = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/filter-service.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/utils/filter-service.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.default = (service, txtQuery) => {
@@ -2953,9 +2953,9 @@ var require_filter_service = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/filter-txt.js
+// node_modules/bonjour-service/dist/lib/utils/filter-txt.js
 var require_filter_txt = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/filter-txt.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/utils/filter-txt.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.default = (data) => Object.keys(data).filter((key2) => !key2.includes("binary")).reduce((cur, key2) => {
@@ -2964,9 +2964,9 @@ var require_filter_txt = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/equal-txt.js
+// node_modules/bonjour-service/dist/lib/utils/equal-txt.js
 var require_equal_txt = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/utils/equal-txt.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/utils/equal-txt.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.default = equalTxt;
@@ -2986,9 +2986,9 @@ var require_equal_txt = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/browser.js
+// node_modules/bonjour-service/dist/lib/browser.js
 var require_browser = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/browser.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/browser.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -3185,9 +3185,9 @@ var require_browser = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/bonjour.js
+// node_modules/bonjour-service/dist/lib/bonjour.js
 var require_bonjour = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/lib/bonjour.js"(exports2) {
+  "node_modules/bonjour-service/dist/lib/bonjour.js"(exports2) {
     "use strict";
     var __importDefault = exports2 && exports2.__importDefault || function(mod) {
       return mod && mod.__esModule ? mod : { "default": mod };
@@ -3240,9 +3240,9 @@ var require_bonjour = __commonJS({
   }
 });
 
-// node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/index.js
+// node_modules/bonjour-service/dist/index.js
 var require_dist = __commonJS({
-  "node_modules/.pnpm/bonjour-service@1.4.4/node_modules/bonjour-service/dist/index.js"(exports2, module2) {
+  "node_modules/bonjour-service/dist/index.js"(exports2, module2) {
     "use strict";
     var __createBinding = exports2 && exports2.__createBinding || (Object.create ? (function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
@@ -3309,7 +3309,8 @@ var require_dist = __commonJS({
 // electron/lan-service.mjs
 var lan_service_exports = {};
 __export(lan_service_exports, {
-  LanService: () => LanService
+  LanService: () => LanService,
+  networkEndpoints: () => networkEndpoints
 });
 module.exports = __toCommonJS(lan_service_exports);
 var import_node_http = __toESM(require("node:http"), 1);
@@ -3356,7 +3357,29 @@ function localEndpoint(value) {
   return url.href;
 }
 
+// shared/lan-endpoints.mjs
+function rankEndpoints(values) {
+  const rank = (value) => {
+    const host = new URL(value).hostname;
+    return host.startsWith("169.254.") ? 3 : host.startsWith("127.") ? 2 : 1;
+  };
+  return [...new Set(values.map(localEndpoint))].sort((a, b) => rank(a) - rank(b));
+}
+function connectionProblem(error, endpoint) {
+  const text = String(error?.message || error), code = String(error?.cause?.code || error?.code || "");
+  if (/identity|commitment/i.test(text)) return `[LAN-PAIR-004] Device identity did not match at ${endpoint}.`;
+  if (/ECONNREFUSED|refused/i.test(code + " " + text)) return `[LAN-NET-002] Connection refused at ${endpoint}. Keep Guitar.io open with Local sync enabled; check its firewall permission.`;
+  if (/Timeout|ETIMEDOUT|timed out|aborted/i.test(code + " " + text)) return `[LAN-NET-001] Connection timed out at ${endpoint}. Check the address, network and firewall.`;
+  if (/Pairing rejected|Pairing is unavailable|code/i.test(text)) return `[LAN-PAIR-002] Pairing rejected at ${endpoint}. Check the six-digit code and any pending confirmation.`;
+  return `[LAN-NET-003] Cannot connect at ${endpoint}: ${text}`;
+}
+
 // electron/lan-service.mjs
+function networkEndpoints(interfaces, port) {
+  if (!port) return [];
+  const rows = Object.entries(interfaces).flatMap(([name, addresses]) => (addresses || []).filter((a) => a?.family === "IPv4" && !a.internal && privateIPv4(a.address)).map((a) => ({ endpoint: `http://${a.address}:${port}/sync`, priority: a.address.startsWith("169.254.") ? 100 : /vpn|hyper-v|vethernet|wsl|docker|virtual|tun|tap|tailscale|zerotier/i.test(name) ? 10 : 0 })));
+  return [...new Set(rows.sort((a, b) => a.priority - b.priority).map((a) => a.endpoint))];
+}
 var LanService = class {
   constructor(handler) {
     this.handler = handler;
@@ -3371,9 +3394,7 @@ var LanService = class {
     return { available: true, enabled: !!this.server, name: this.config?.name || import_node_os.default.hostname(), endpoints: this.endpoints || [], discovered: [...this.peers.values()], error: this.error || "" };
   }
   addresses() {
-    const port = this.server?.address()?.port, addresses = port ? Object.values(import_node_os.default.networkInterfaces()).flat().filter((a) => a?.family === "IPv4" && !a.internal && privateIPv4(a.address)).map((a) => `http://${a.address}:${port}/sync`) : [];
-    const routed = addresses.filter((a) => !a.includes("169.254."));
-    return routed.length ? routed : addresses;
+    return networkEndpoints(import_node_os.default.networkInterfaces(), this.server?.address()?.port);
   }
   advertise() {
     this.service = this.bonjour.publish({ name: `Guitar.io ${this.config.id}`, type: "guitario", port: this.server.address().port, txt: { id: this.config.id, name: this.config.name, protocol: "1", code: this.config.pairingCode || "" } });
@@ -3453,7 +3474,7 @@ var LanService = class {
       const discovered = (service) => {
         const id = service.txt?.id;
         if (!id || id === config.id) return;
-        const all = (service.addresses || []).filter(privateIPv4).map((address) => `http://${address}:${service.port}/sync`), routed = all.filter((a) => !a.includes("169.254.")), endpoints = routed.length ? routed : all;
+        const endpoints = rankEndpoints((service.addresses || []).filter(privateIPv4).map((address) => `http://${address}:${service.port}/sync`));
         if (endpoints.length) this.peers.set(id, { id, name: service.txt?.name || "Guitar.io", code: service.txt?.code || this.peers.get(id)?.code || "", endpoints });
       };
       this.browser = this.bonjour.find({ type: "guitario" }, discovered);
@@ -3477,7 +3498,12 @@ var LanService = class {
   }
   async request(endpoint, body) {
     localEndpoint(endpoint);
-    const result = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(25e3), redirect: "error" });
+    let result;
+    try {
+      result = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(body?.op?.startsWith("pair:") ? 5e3 : 25e3), redirect: "error" });
+    } catch (error) {
+      throw new Error(connectionProblem(error, endpoint));
+    }
     if (!result.ok) throw new Error(result.status === 403 ? "Pairing rejected. Check the pairing code and device clocks." : `LAN connection failed (${result.status}).`);
     const text = await result.text();
     if (text.length > 64 * 1024 * 1024) throw new Error("Sync response too large.");
@@ -3502,5 +3528,6 @@ var LanService = class {
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  LanService
+  LanService,
+  networkEndpoints
 });

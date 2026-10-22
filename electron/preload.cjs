@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('guitarAccount',{authenticate:url=>ipcRenderer.invoke('account:authenticate',url),cancelAuth:()=>ipcRenderer.invoke('account:cancel-auth'),openExternal:url=>ipcRenderer.invoke('account:open-external',url),loadSession:()=>ipcRenderer.invoke('account:load-session'),saveSession:value=>ipcRenderer.invoke('account:save-session',value),clearSession:()=>ipcRenderer.invoke('account:clear-session')});
 contextBridge.exposeInMainWorld('guitarUpdates',{
   status:()=>ipcRenderer.invoke('updates:status'),check:()=>ipcRenderer.invoke('updates:check'),settings:value=>ipcRenderer.invoke('updates:settings',value),prepare:()=>ipcRenderer.invoke('updates:prepare-download'),install:options=>ipcRenderer.invoke('updates:install',options),activated:()=>ipcRenderer.invoke('updates:activated'),
   onChange:callback=>{const listener=(_event,state)=>callback(state);ipcRenderer.on('updates:changed',listener);return()=>ipcRenderer.removeListener('updates:changed',listener);},
@@ -9,7 +10,7 @@ contextBridge.exposeInMainWorld('guitarIO', {
   downloadSongsterr: url => ipcRenderer.invoke('songsterr:download', url),
   songsterrSync: url => ipcRenderer.invoke('songsterr:sync', url),
   youtubeRate: (videoId,rate,request) => ipcRenderer.invoke('youtube:rate',videoId,rate,request),
-  openLearn: id => ipcRenderer.invoke('learn:open', id),
+  openLearn: (id,scope) => ipcRenderer.invoke('learn:open', id,scope),
   updateLearn: id => ipcRenderer.send('learn:update', id),
   onLearnContext: callback => { const listener = (_event, id) => callback(id); ipcRenderer.on('learn:context', listener); return () => ipcRenderer.removeListener('learn:context', listener); },
 });

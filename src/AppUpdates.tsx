@@ -26,7 +26,7 @@ export function useUpdates(availability:()=>UpdateAvailability){
 }
 export function UpdateReadyButton({updates,onClick}:{updates:ReturnType<typeof useUpdates>;onClick:()=>void}){
  const state=updates.state;if(!state||!['available','ready'].includes(state.status))return null;
- const ready=state.status==='ready';return <button className="icon-button update-ready-button" aria-label="Update ready" title={`${ready?'Install':'Download'} Guitar.io ${state.latestVersion}`} onClick={onClick}><Download size={20} aria-hidden="true"/></button>;
+ const ready=state.status==='ready';return <button className="icon-button update-ready-button" aria-label="Update ready" title={`${ready?'Install':'Download'} Guitar.io ${state.latestVersion}`} onClick={onClick}><Download size={20} aria-hidden="true"/><span className="update-alert-badge" aria-hidden="true">!</span></button>;
 }
 export function UpdateSettings({updates,onClose}:{updates:ReturnType<typeof useUpdates>;onClose:()=>void}){
  const [error,setError]=useState(''),[saving,setSaving]=useState(false),[confirm,setConfirm]=useState(false),state=updates.state,ready=state?.status==='ready';

@@ -17,9 +17,9 @@ function releaseInfo(data,current,platform,arch,repository){
   return {status:newer(version,current)?(downloadUrl?'available':'missing-build'):'current',latestVersion:version,releaseUrl,downloadUrl,assetName:asset?.name || '',size:asset?.size,digest:asset?.digest,message:newer(version,current)&&!downloadUrl?'An update for this computer is not available yet.':''};
 }
 class UpdateService{
-  constructor({directory,currentVersion,platform=process.platform,arch=process.arch,fetcher=fetch,openExternal,installerOptions,onChange=()=>{}}){this.file=path.join(directory,'updates.json');this.currentVersion=currentVersion;this.platform=platform;this.arch=arch;this.fetcher=fetcher;this.openExternal=openExternal;this.onChange=onChange;this.config={...require('./update-config.json'),autoUpdate:true};this.result={status:'unchecked',message:''};if(installerOptions){const {UpdateInstaller}=require('./update-installer.cjs');this.installer=new UpdateInstaller({directory,platform,fetcher,...installerOptions,notify:change=>this.changed(change)});}}
+  constructor({directory,currentVersion,platform=process.platform,arch=process.arch,fetcher=fetch,openExternal,installerOptions,feedConfig,onChange=()=>{}}){this.file=path.join(directory,'updates.json');this.currentVersion=currentVersion;this.platform=platform;this.arch=arch;this.fetcher=fetcher;this.openExternal=openExternal;this.onChange=onChange;this.config={...require('./update-config.json'),...feedConfig,autoUpdate:true};this.result={status:'unchecked',message:''};if(installerOptions){const {UpdateInstaller}=require('./update-installer.cjs');this.installer=new UpdateInstaller({directory,platform,fetcher,...installerOptions,notify:change=>this.changed(change)});}}
   changed(change){this.result={...this.result,...change};this.onChange(this.status());}
-  async load(){try{const saved=JSON.parse(await fs.readFile(this.file,'utf8'));this.config.autoUpdate=saved.autoUpdate ?? saved.checkOnLaunch!==false;this.config.checkOnLaunch=this.config.autoUpdate;if(saved.cache?.repository===this.config.repository&&saved.cache.data&&saved.cache.data.assets?.some(a=>/^sha256:[a-f0-9]{64}$/.test(a.digest || ''))){this.result=releaseInfo(saved.cache.data,this.currentVersion,this.platform,this.arch,this.config.repository);this.cache=saved.cache;}}catch{}
+  async load(){try{const saved=JSON.parse(await fs.readFile(this.file,'utf8'));this.config.autoUpdate=saved.autoUpdate ?? saved.checkOnLaunch!==false;this.config.checkOnLaunch=this.config.autoUpdate;if(this.config.provider!=='https'&&saved.cache?.repository===this.config.repository&&saved.cache.data&&saved.cache.data.assets?.some(a=>/^sha256:[a-f0-9]{64}$/.test(a.digest || ''))){this.result=releaseInfo(saved.cache.data,this.currentVersion,this.platform,this.arch,this.config.repository);this.cache=saved.cache;}}catch{}
     const outcome=await fs.readFile(path.join(path.dirname(this.file),'update-result.json'),'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);
     if(outcome?.status==='failed')this.result={status:'error',message:outcome.message || 'Update could not finish. Try again.'};
     this.failedInstall=outcome?.status==='failed';
@@ -27,10 +27,27 @@ class UpdateService{
   status(){return {...this.config,...this.result,currentVersion:this.currentVersion,platform:this.platform,arch:this.arch,autoInstallPaused:!!this.failedInstall};}
   async activate(){
     const file=path.join(path.dirname(this.file),'update-result.json'),outcome=await fs.readFile(file,'utf8').then(s=>JSON.parse(s.replace(/^\uFEFF/,''))).catch(()=>undefined);
-    if(outcome?.status!=='installed'||outcome.version!==this.currentVersion||outcome.activated)return;
+    if(outcome?.status!=='installed'||outcome.version!==this.currentVersion)return false;
+    if(outcome.activated)return true;
     outcome.activated=true;outcome.pid=process.pid;this.failedInstall=false;
     const temp=file+'.activation.tmp';await fs.writeFile(temp,JSON.stringify(outcome));await fs.rename(temp,file);
     if(this.platform==='darwin'&&/^[a-f0-9-]{36}$/.test(outcome.rollbackToken || '')&&this.installer){const parent=path.dirname(path.resolve(path.dirname(this.installer.execPath),'../..')),backup=path.join(parent,`.Guitar.io-rollback-${outcome.rollbackToken}.app`);if(!(await fs.lstat(backup).catch(()=>undefined))?.isSymbolicLink())await require('./update-installer.cjs').removeStage(parent,backup).catch(()=>{});}
+    return true;
+  }
+  // Legacy installers launch first and write their result afterward. The
+  // renderer-ready acknowledgement must survive that ordering without treating
+  // a normal metadata read as proof that a replacement app loaded successfully.
+  async activateWhenAvailable({attempts=80,interval=250}={}){
+    if(this.activationPending)return this.activationPending;
+    this.activationPending=(async()=>{
+      const staged=(await fs.readdir(path.join(path.dirname(this.file),'app-updates')).catch(()=>[])).length>0;
+      for(let attempt=0;attempt<attempts;attempt++){
+        let transient=false;
+        try{if(await this.activate())return true;}catch(error){if(!['EPERM','EACCES','EBUSY','ENOENT'].includes(error.code))throw error;transient=true;}
+        if(attempt===0&&!staged&&!transient)return false;
+        if(attempt+1<attempts)await new Promise(resolve=>setTimeout(resolve,interval));
+      }return false;
+    })().finally(()=>{this.activationPending=undefined;});return this.activationPending;
   }
   async persist(){this.writing=(this.writing || Promise.resolve()).catch(()=>{}).then(async()=>{await fs.mkdir(path.dirname(this.file),{recursive:true});const temp=this.file+'.tmp';await fs.writeFile(temp,JSON.stringify({...this.config,cache:this.cache}),'utf8');await fs.rename(temp,this.file);});await this.writing;}
   async settings(value){if(typeof value?.autoUpdate!=='boolean'&&typeof value?.checkOnLaunch!=='boolean')throw Error('Invalid update preference.');this.config.autoUpdate=value.autoUpdate ?? value.checkOnLaunch;this.config.checkOnLaunch=this.config.autoUpdate;await this.persist();this.onChange(this.status());return this.status();}
@@ -39,6 +56,9 @@ class UpdateService{
     if(this.pending)return this.pending;
     this.pending=(async()=>{const repository=this.config.repository;
       try{
+        if(this.config.provider==='https'){
+          const {httpsConfig,signedReleaseInfo}=require('./update-feed.cjs'),{url}=httpsConfig(this.config),response=await this.fetcher(url.href,{signal:AbortSignal.timeout(10000)});if(!response.ok)throw Error('Could not check the update service. Try again.');const text=await response.text();if(text.length>256*1024)throw Error('Invalid update response.');this.result={...signedReleaseInfo(JSON.parse(text),this.currentVersion,this.platform,this.arch,this.config),lastChecked:new Date().toISOString()};this.cache=undefined;await this.persist();this.onChange(this.status());return this.status();
+        }
         const response=await this.fetcher(`https://api.github.com/repos/${repository}/releases/latest`,{headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','User-Agent':`Guitar.io/${this.currentVersion}`,...(this.cache?.etag?{'If-None-Match':this.cache.etag}:{})},signal:AbortSignal.timeout(10000)});
         if(response.status===404){this.result={status:'no-release',message:'No update is available yet.'};return this.status();}
         if(!response.ok&&response.status!==304)throw new Error(response.status===403||response.status===429?'Update checks are temporarily limited. Try again later.':'Could not check for updates. Try again.');

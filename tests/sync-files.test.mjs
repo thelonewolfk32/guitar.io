@@ -45,12 +45,12 @@ test('metadata apply queues bytes atomically and completion persists GP/audio/ar
 });
 
 test('offline failure leaves a durable queue and resumable chunk prefix for next sync',async()=>{
- const id='resume-song';await applySyncPage(songRows(id));await storeTransfer('source/'+id,bytes.subarray(0,100),0,bytes.length);
+ const id='resume-song',resumeBytes=new Uint8Array(fixtures(2,4)[1].source),resumeHash=fixtures(2,4)[1].hash;await applySyncPage(songRows(id).map(row=>({...row,patch:{...row.patch,...(row.entity==='song'?{hash:resumeHash}:row.entity==='source'?{hash:resumeHash,byteLength:resumeBytes.length}:{})}})));await storeTransfer('source/'+id,resumeBytes.subarray(0,100),0,resumeBytes.length);
  const {engine,restore}=environment();let unavailable=true;const offsets=[];
- engine.call=async(_peer,payload)=>{if(payload.op==='head')return {head:50,ready:false,protocol:2};offsets.push(payload.offset);if(unavailable)throw new Error('Mac is asleep');return chunk(bytes,payload.offset);};
+ engine.call=async(_peer,payload)=>{if(payload.op==='head')return {head:50,ready:false,protocol:2};offsets.push(payload.offset);if(unavailable)throw new Error('Mac is asleep');return chunk(resumeBytes,payload.offset);};
  try{
   await engine.run();assert((await pending()).some(p=>p.id===id));assert.match(engine.view.error,/still need downloading/);assert.equal((await transferProgress('source/'+id)).offset,100);
-  unavailable=false;await engine.run();assert.equal(offsets.at(-1),100);assert(!(await pending()).some(p=>p.id===id));assert.deepEqual((await readSong(id)).source,bytes);
+  unavailable=false;await engine.run();assert.equal(offsets.at(-1),100);assert(!(await pending()).some(p=>p.id===id));assert.deepEqual((await readSong(id)).source,resumeBytes);
  }finally{restore();}
 });
 

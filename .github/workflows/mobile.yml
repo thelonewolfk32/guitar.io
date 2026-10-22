@@ -1,0 +1,53 @@
+name: React Native source and iOS build
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ios:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [local, full]
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mobile/package-lock.json
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix mobile --ignore-scripts
+      - run: npm run typecheck && npm run admin:typecheck && npm run mobile:typecheck
+      - run: npm run assets && npm run mobile:prepare
+      - run: bundle install
+        working-directory: mobile
+      - name: Record tested Apple tool versions
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+          node --version
+          ruby --version
+          bundle --version
+          bundle exec pod --version
+        working-directory: mobile
+      - run: bundle exec ruby scripts/check-ios-profiles.rb
+        working-directory: mobile
+      - run: bundle exec ruby scripts/configure-ios.rb --profile ${{ matrix.profile }}
+        working-directory: mobile
+      - run: bundle exec pod install
+        working-directory: mobile/ios
+      - name: Compile ${{ matrix.profile }} profile without signing
+        run: xcodebuild -workspace GuitarIO.xcworkspace -scheme GuitarIO -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
+        working-directory: mobile/ios

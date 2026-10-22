@@ -1,0 +1,42 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import {PGlite} from '@electric-sql/pglite';
+import {authCallback,mobileCallback,AccountAuth} from '../shared/auth.ts';
+import {recentAuthentication,lifecycleRoutes} from '../supabase/functions/guitario/lifecycle.ts';
+import {createRecoveryPoint,sha256,retainedPoints,validateRecoveryPoint} from '../scripts/lib/recovery-point.mjs';
+import {createRequire} from 'node:module';const require=createRequire(import.meta.url),{validProviderURL,callback}=require('../electron/account-oauth.cjs');
+const a='00000000-0000-4000-8000-000000000001',b='00000000-0000-4000-8000-000000000002',project='abcdefghijklmnopqrst';
+test('exact auth callbacks reject bearer fragments, wrong paths, credentials and mixed flows',()=>{
+ assert.deepEqual(authCallback(mobileCallback+'?token_hash=one-use&type=recovery',mobileCallback),{hash:'one-use',type:'recovery'});
+ assert.deepEqual(authCallback(mobileCallback+'?code=pkce',mobileCallback),{code:'pkce'});
+ for(const url of ['evil://callback?code=x',mobileCallback+'/other?code=x',mobileCallback+'#access_token=x',mobileCallback+'?type=invite&token_hash=x',mobileCallback+'?code=x&token_hash=y',mobileCallback+'?error=cancelled'])assert.throws(()=>authCallback(url,mobileCallback));
+});
+test('desktop system-browser URLs require PKCE and exact callbacks',()=>{
+ const base='https://'+project+'.supabase.co/auth/v1/authorize?provider=google&redirect_to='+encodeURIComponent(callback)+'&code_challenge=verifierhash&code_challenge_method=s256';assert.equal(validProviderURL(base),base);
+ for(const url of [base.replace('s256','plain'),base.replace('127.0.0.1','localhost'),base.replace(project+'.supabase.co','evil.example'),base+'&x=1#fragment','file:///x'])assert.throws(()=>validProviderURL(url));
+});
+test('recent authentication uses verified AMR, never a refreshed JWT issue time',()=>{const token=claims=>'Bearer x.'+Buffer.from(JSON.stringify(claims)).toString('base64url')+'.x',now=Date.now();assert(recentAuthentication(token({amr:[{method:'oauth',timestamp:now/1000-5}]}),now));assert(!recentAuthentication(token({iat:now/1000,amr:[{method:'password',timestamp:now/1000-600}]}),now));assert(!recentAuthentication(token({amr:[{method:'token_refresh',timestamp:now/1000}]}),now));});
+test('signout clears persisted SDK sessions and pending PKCE even before SDK hydration',async()=>{const key='guitario-auth-'+project+'.supabase.co',values=new Map([[key,'private-session'],[key+'-flows-code-verifier',JSON.stringify(['abcdefgh'])],[key+'-flow-abcdefgh-code-verifier','private-verifier']]);const auth=new AccountAuth('https://'+project+'.supabase.co','public-fixture',{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)},mobileCallback);await auth.signOut();assert.equal(values.size,0);});
+test('R2 manifests are published only after original byte verification; files deduplicate across daily points',async()=>{
+ const saved=new Map(),db=['schema.dump','data.dump','storage-policies.sql'].map(name=>({name})),bytes=Buffer.from('original file');let reads=0;
+ const options={project,objects:[{bucket:'library',path:a+'/blobs/'+sha256(bytes),expectedHash:sha256(bytes),expectedSize:bytes.length}],database:db,read:async item=>{reads++;return item.name?Buffer.from(item.name):bytes;},has:async key=>saved.has(key),put:async(key,value)=>saved.set(key,Buffer.from(value))};
+ const first=await createRecoveryPoint({...options,now:new Date('2026-10-18')});assert.equal(first.objects.length,1);const count=saved.size;await createRecoveryPoint({...options,now:new Date('2026-10-19')});assert.equal(saved.size,count+1);assert.equal(reads,8);
+ await assert.rejects(createRecoveryPoint({...options,now:new Date('2026-10-20'),read:async()=>Buffer.from('corrupt')}),/checksum/);assert(!saved.has('points/2026-10-20.json'));
+ assert.equal(retainedPoints(Array.from({length:40},(_,i)=>String(i).padStart(2,'0'))).length,30);assert.throws(()=>validateRecoveryPoint({...first,database:[]}));
+});
+test('storage lifecycle preserves saved/archived references, serialises cleanup, expires leases and restricts operations',async()=>{
+ const db=new PGlite();try{
+ await db.exec(`create schema auth;create schema storage;create role anon;create role authenticated;create role service_role;create table auth.users(id uuid primary key,email text);insert into auth.users values('${a}','one@example.test'),('${b}','two@example.test');create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint);create table storage.objects(bucket_id text,name text,metadata jsonb);alter table storage.objects enable row level security;grant usage on schema public,auth,storage to authenticated;grant select,insert,update,delete on storage.objects to authenticated;`);
+ for(const file of (await fs.readdir('supabase/migrations')).filter(f=>f.endsWith('.sql')).sort())await db.exec(await fs.readFile('supabase/migrations/'+file,'utf8'));
+ const rpc=async(name,args=[])=>(await db.query('select public.'+name+'('+args.map((_,i)=>'$'+(i+1)).join(',')+') result',args)).rows[0].result,hash='a'.repeat(64),orphan='b'.repeat(64);
+ await rpc('reserve_entries',[a,[{id:'pending',kind:'pending'},{id:'archived',kind:'score'}]]);await rpc('cloud_reserve_file',[a,'source','archived',hash,9]);
+ await db.query('insert into storage.objects values($1,$2,$3),($1,$4,$3)',['library',a+'/blobs/'+hash,{size:9},a+'/blobs/'+orphan]);await db.exec('update public.library_entries set active=false');await rpc('storage_scan');assert.equal((await db.query('select count(*) n from public.storage_orphans')).rows[0].n,1);
+ assert.equal(await rpc('storage_claim',['library',a+'/blobs/'+orphan]),false);await db.exec("update public.storage_orphans set first_seen=now()-interval '8 days'");
+ await db.exec(`select set_config('request.jwt.claim.sub','${a}',false);set role authenticated;`);await assert.rejects(rpc('storage_scan'),/permission denied/);assert.equal(await rpc('cloud_upload_allowed',[a+'/blobs/'+hash,{size:10}]),false);assert.equal(await rpc('cloud_upload_allowed',[a+'/blobs/'+hash,{size:9}]),true);await db.exec('reset role');
+ await db.exec("update public.blob_leases set expires_at=now()-interval '2 hours'");await rpc('storage_scan');assert.equal((await db.query('select count(*) n from public.cloud_files')).rows[0].n,1);assert.equal((await db.query('select count(*) n from public.library_entries')).rows[0].n,2);
+ assert.equal(await rpc('storage_claim',['library',a+'/blobs/'+hash]),false);assert.equal(await rpc('storage_claim',['library',a+'/blobs/'+orphan]),true);await assert.rejects(rpc('cloud_reserve_file',[a,'asset','new',orphan,9]),/cleanup/);
+ await db.query("insert into public.backup_lease values(true,$1,now()+interval '1 hour')",[a]);assert.equal(await rpc('storage_claim',['library',a+'/blobs/'+orphan]),false);await db.exec('delete from public.backup_lease');
+ await db.query("insert into public.owner_grants(user_id,kind,extra_songs) values($1,'limits',100)",[a]);await assert.rejects(rpc('reserve_import',[a,Array.from({length:110},(_,i)=>({id:'import'+i,kind:'score'}))]),/Song limit/);assert.equal((await db.query('select count(*) n from public.library_entries')).rows[0].n,2);await db.query('delete from public.owner_grants where user_id=$1',[a]);
+ await rpc('ops_count',['invocations',2]);assert.equal((await rpc('ops_snapshot')).usage.invocations,2);
+ await db.query('insert into public.owner_roles values($1)',[a]);await assert.rejects(rpc('begin_account_deletion',[a]),/owner/);const nonce=await rpc('prepare_account_deletion',[b]);await rpc('begin_account_deletion',[b,nonce]);assert.equal(await rpc('account_enabled',[b]),false);await rpc('purge_account_relations',[b]);await db.query('delete from auth.users where id=$1',[b]);assert.equal((await db.query('select count(*) n from public.account_deletions')).rows[0].n,1);
+ }finally{await db.close();}
+});
+test('account deletion rejects old sessions before provider or file changes',async()=>{let calls=0;const lifecycle=lifecycleRoutes({rest:async()=>{calls++;},env:()=>'',fetcher:async()=>{calls++;}});await assert.rejects(lifecycle.deleteAccount({id:a},'Bearer stale',{confirmation:'DELETE'}),/five minutes/);assert.equal(calls,0);});

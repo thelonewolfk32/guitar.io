@@ -35,3 +35,15 @@ test('replacement is acknowledged only after the renderer loads, for the install
   await fs.writeFile(file,JSON.stringify({status:'failed',version:'1.5.0',message:'Startup failed'}));await old.load();assert.equal(old.status().autoInstallPaused,true,'rollback must not automatically loop the failed update');
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+test('a renderer-ready acknowledgement waits for a legacy installer writing after launch',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'guitario-late-activation-')),file=path.join(dir,'update-result.json');
+ try{
+  await fs.mkdir(path.join(dir,'app-updates','legacy-stage'),{recursive:true});const service=new updater.UpdateService({directory:dir,currentVersion:'1.6.0'});await service.load();
+  const pending=service.activateWhenAvailable({attempts:30,interval:10});await new Promise(resolve=>setTimeout(resolve,35));await fs.writeFile(file,JSON.stringify({status:'installed',version:'1.6.0',pid:123}));assert.equal(await pending,true);const result=JSON.parse(await fs.readFile(file));assert.equal(result.activated,true);assert.equal(result.pid,process.pid);
+ }finally{await fs.rm(dir,{recursive:true,force:true});}
+});
+test('startup acknowledgement coalesces and retries a transient Windows file lock',async()=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'guitario-locked-activation-')),file=path.join(dir,'update-result.json'),rename=fs.rename;let writes=0;
+ try{await fs.writeFile(file,JSON.stringify({status:'installed',version:'1.6.0',activated:false}));fs.rename=async(...args)=>{if(args[0]===file+'.activation.tmp'&&++writes===1)throw Object.assign(Error('Fixture file lock'),{code:'EPERM'});return rename(...args);};const service=new updater.UpdateService({directory:dir,currentVersion:'1.6.0'});await Promise.all([service.activateWhenAvailable({interval:10}),service.activateWhenAvailable({interval:10})]);assert.equal(writes,2);assert.equal(JSON.parse(await fs.readFile(file)).activated,true);
+ }finally{fs.rename=rename;await fs.rm(dir,{recursive:true,force:true});}
+});

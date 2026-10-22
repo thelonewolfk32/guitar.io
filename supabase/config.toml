@@ -1,0 +1,11 @@
+project_id = "guitar-io"
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["io.guitario.mobile.auth://callback", "http://127.0.0.1:43871/auth/callback"]
+enable_manual_linking = true
+[auth.email]
+enable_confirmations = true
+secure_password_change_enabled = true
+[functions.guitario]
+verify_jwt = false
+# The handler validates user tokens and billing webhook signatures itself.

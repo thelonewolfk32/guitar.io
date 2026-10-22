@@ -1,23 +1,32 @@
-Guitar.io V1.5.1
+Guitar.io V1.6.0 local test candidate
+
+Read VALIDATION-v1.6.0.md for checks and remaining work.
+No Supabase project or live payment services are configured yet.
 
 Windows: extract the full ZIP, then open Guitar.io.exe.
 Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app.
 
-Update BOTH paired computers, then use Device sync > Sync now.
-Sync now downloads missing Guitar Pro files, MP3 attachments and artwork for offline use.
-Keep source apps open and devices awake until Files saved for offline use appears.
-Existing metadata-only songs repair without resetting pairing or checkpoints.
-Device sync > Show diagnostics (OFF by default) shows failures and exports a report.
+Free: local/cloud sync, five saved songs or links, manual GP files and Learn (beta).
+Premium: unlimited song count within 1 GiB and automatic tools; AUD $5/month or $50/year.
+No advertising. Existing songs and source files are preserved after downgrade.
+Choose active entries in Account & plans. Archived songs remain exportable.
 
-Help (?) > version number opens Updates.
-Check for updates downloads and verifies. Click Install update when ready.
-Launch checks always run; A light-green download icon appears at the top right for a new release.
-Auto-updater OFF/ON controls launch downloads and installation while the library is idle.
-Close editors and return to the library, or confirm Force install.
-Active saves/imports must finish. Windows keeps rollback until startup succeeds.
-Mac updates sign in the background. A preparation failure keeps the app open.
-If an older Mac updater fails, manually prepare/replace the app with V1.4.42 once.
-V1.4.3 users must install V1.4.4 once manually to obtain the new installer.
-The personal library remains in separate app data.
-Read GITHUB_RELEASES.md for publishing source and future versions.
-No iOS build is included.
+Use Share a song to save a Spotify, YouTube or Apple Music link.
+Attach your chosen GP file to complete the same entry.
+Player settings includes a persistent Section colours switch.
+Guitar settings includes Delete guitar, keeping songs.
+Help includes feedback. Usage counts are optional and off by default.
+
+Update both paired computers before testing Device sync.
+Sync transfers original GP files, artwork and audio attachments for offline use.
+Keep source devices awake until complete; missing source files and quota failures are reported.
+
+Help (?) > version number opens Updates. A ! indicates a newer release.
+Check for updates downloads and verifies; Install update applies it when ready.
+Active saves/imports and sync finish before installation. Personal app data is separate.
+
+PC_SETUP.md: programs and online accounts to prepare.
+HOSTED_SERVICES.md: staging, cloud sync, purchases and private updates.
+OWNER_SETUP.md: owner website, MFA, gifts and account allowances.
+IOS_REACT_NATIVE_HANDOFF.md: React Native Apple source and Mac/iPhone checks.
+No signed iOS binary or live cloud deployment is included.

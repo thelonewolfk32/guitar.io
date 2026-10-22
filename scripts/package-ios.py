@@ -1,35 +1,33 @@
-"""Export the native project with prebuilt web assets; this is NOT an IPA."""
+"""Package the current React Native source and handoff. Never creates an IPA."""
 from pathlib import Path
-import zipfile
-import json
-import plistlib
 import hashlib
-import stat
+import json
+import subprocess
+import zipfile
 root = Path(__file__).resolve().parent.parent
+git = ['git', '-c', 'safe.directory=' + root.as_posix()]
+commit = subprocess.check_output(git + ['rev-parse', 'HEAD'], cwd=root, text=True).strip()
+tracked = subprocess.check_output(git + ['ls-files', '-z'], cwd=root).decode('utf-8').split('\0')
 version = json.loads((root / 'package.json').read_text())['version']
-folder = f'Guitar-io-{version}-iOS-Project'
-output = root.parent.parent / f'{folder}.zip'
-files = list((root / 'ios').rglob('*'))
+folder = f'Guitar-io-{version}-iOS-Source-{commit[:7]}'
+output_dir = root / 'release' / 'ios-first'
+output_dir.mkdir(parents=True, exist_ok=True)
+output = output_dir / f'{folder}.zip'
 with zipfile.ZipFile(output, 'x', zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
-    for file in files:
-        if not file.is_file() or any(name in file.parts for name in ['build','DerivedData','xcuserdata','.DS_Store']):
+    for name in tracked:
+        if not name:
             continue
-        archive.write(file, folder + '/' + file.relative_to(root).as_posix())
-    for name in ['IOS_HANDOFF.md','SYNC.md','VALIDATION-v1.4.md','CHANGELOG-v1.4.md','CHANGELOG-v1.4.1.md','VALIDATION-v1.4.1.md','THIRD_PARTY_NOTICES.md']:
-        archive.write(root / name, folder + '/' + name)
-    readme = 'Guitar.io ' + version + ' iOS native project. Open ios/App/App.xcodeproj on your Mac. See IOS_HANDOFF.md. This is an Xcode project, not a signed/installable IPA.\n'
-    archive.writestr(folder + '/READ_ME_FIRST.txt', readme)
+        file = root / name
+        if not file.is_file():
+            continue
+        if any(part in {'node_modules', 'Pods', '.git', 'test-results', 'release', 'ScoreWeb', 'DerivedData', 'xcuserdata'} for part in Path(name).parts):
+            raise RuntimeError('Generated/private path was tracked: ' + name)
+        if file.suffix.lower() in {'.key', '.pem', '.p12', '.guitariobak', '.dump'} or file.name.startswith('.env') and not file.name.endswith('.example'):
+            raise RuntimeError('Private settings must never be packaged: ' + name)
+        archive.write(file, folder + '/' + name)
+    archive.writestr(folder + '/READ_ME_FIRST.txt', f'Guitar.io {version} React Native iOS source. Commit {commit}. Start with IOS_REACT_NATIVE_HANDOFF.md and IOS_FIRST_RELEASE.md. Use mobile/ios/GuitarIO.xcworkspace after preparation, local Personal Team profile first. The retained ios/App tree is migration/reference only. This is source, not a signed IPA or a completed device test.\n')
 with zipfile.ZipFile(output) as archive:
     assert archive.testzip() is None
-    assert archive.read(folder + '/ios/App/App/public/index.html') == (root / 'dist/index.html').read_bytes()
-    for item in (root / 'dist').rglob('*'):
-        if item.is_file():
-            assert archive.read(folder + '/ios/App/App/public/' + item.relative_to(root / 'dist').as_posix()) == item.read_bytes()
-    info = plistlib.loads(archive.read(folder + '/ios/App/App/Info.plist'))
-    assert '_guitario._tcp' in info['NSBonjourServices']
-    assert info['NSAppTransportSecurity'].get('NSAllowsLocalNetworking') is True
-    assert not info['NSAppTransportSecurity'].get('NSAllowsArbitraryLoads')
-    pbx = archive.read(folder + '/ios/App/App.xcodeproj/project.pbxproj').decode('utf-8-sig')
-    assert 'GuitarLocalPlugin.swift in Sources' in pbx and f'MARKETING_VERSION = {version};' in pbx
-    assert 'GuitarViewController()' in archive.read(folder + '/ios/App/App/SceneDelegate.swift').decode()
-    print(json.dumps({'archive':str(output),'files':len(archive.namelist()),'kind':'Xcode project with current web assets; NOT an IPA','nativeCompile':'pending on Mac'}))
+    for required in ['mobile/App.tsx', 'mobile/scripts/configure-ios.rb', 'IOS_REACT_NATIVE_HANDOFF.md', 'IOS_FIRST_RELEASE.md', 'CLOUD_OPERATIONS.md']:
+        assert archive.read(folder + '/' + required) == (root / required).read_bytes()
+print(json.dumps({'archive': str(output), 'commit': commit, 'sha256': hashlib.sha256(output.read_bytes()).hexdigest(), 'kind': 'React Native source, not IPA'}))

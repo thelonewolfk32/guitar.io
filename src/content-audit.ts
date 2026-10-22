@@ -74,7 +74,9 @@ export async function repairLocalContent(){
       if(Object.keys(missing).length){const timestamp=await syncNow(tx),deviceId=await req<string>(tx.objectStore('settings').get('deviceId')),change={deviceId,entity:kind,entityId:id,operation:'upsert' as const,timestamp,fields:Object.keys(missing),patch:missing};const revision=Number(await req(tx.objectStore('changes').add(change))),merged=mergeSyncRow(currentRow,change,revision);if(merged)tx.objectStore('syncEntities').put(merged);tx.objectStore('settings').put(revision,'syncHead');}
     }else{
       // Keep suspect original bytes intact, but never serve them as verified.
-      if(!old && kind==='source')tx.objectStore(store).put(meta);
+      // Restore descriptors from this library's existing sync state as well as
+      // bytes. This is not a new song reservation or a metadata checkpoint reset.
+      if(kind==='source'||meta.kind&&meta.mime&&meta.name)tx.objectStore(store).put({...meta,...(current?.source?{source:current.source}:{}),...(current?.blob?{blob:current.blob}:{})});
       tx.objectStore('settings').put({kind,id,name:meta.name||id,byteLength:Number(meta.byteLength)||0},`lan:pending-content:${kind}/${id}`);
       if(kind==='source'&&old?.source){tx.objectStore('settings').put(true,`lan:invalid-content:${kind}/${id}`);forgetSource(id);}
     }

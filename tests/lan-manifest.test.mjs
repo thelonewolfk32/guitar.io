@@ -27,8 +27,8 @@ test('legacy bytes gain verified descriptors and a protocol 3 manifest without r
 
 test('stale initialized queue and entirely absent descriptors are repaired while missing bytes stay unavailable',async()=>{
  const s={...fixtures(2,4)[1],id:'metadata-only',source:new Uint8Array(fixtures(2,4)[1].source),artworkAssetId:'lost-cover'};await saveSongs([s]);
- await clear('songSources',s.id);await clear('settings','lan:pending-content:source/'+s.id);await setSyncSetting('content-queue-ready',true);
- await repairLocalContent();assert((await pendingSyncContent()).some(item=>item.id===s.id));assert((await pendingSyncContent()).some(item=>item.id==='lost-cover'));
+ await put('songSources',{id:s.id});await clear('settings','lan:pending-content:source/'+s.id);await setSyncSetting('content-queue-ready',true);
+ await repairLocalContent();assert.equal((await contentRecord('source',s.id)).hash,s.hash);assert.equal((await contentRecord('source',s.id)).byteLength,s.source.length);assert((await pendingSyncContent()).some(item=>item.id===s.id));assert((await pendingSyncContent()).some(item=>item.id==='lost-cover'));
  assert.equal((await contentManifest()).items.find(item=>item.id===s.id).available,false);
  const audit=await auditOfflineContent();assert.equal(audit.complete,false);assert(audit.missingSources.some(item=>item.id===s.id));assert(audit.missingArtwork.some(item=>item.id==='lost-cover'));
  await assert.rejects(contentChunk('source',s.id,0),/not cached/);

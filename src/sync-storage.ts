@@ -150,7 +150,7 @@ export async function applySyncPage(input:unknown,checkpoint?:{peer:string;curso
 }
 export async function contentRecord(kind:'source'|'asset',id:string){const d=await db(),tx=d.transaction([kind==='source'?'songSources':'assets','settings']);const [record,invalid]=await Promise.all([req(tx.objectStore(kind==='source'?'songSources':'assets').get(id)),req(tx.objectStore('settings').get(`lan:invalid-content:${kind}/${id}`))]);return record&&invalid?{...record,source:undefined,blob:undefined}:record;}
 export async function contentChunk(kind:'source'|'asset',id:string,offset:number){
-  const record=await contentRecord(kind,id);if(!record || (!record.source&&!record.blob))throw new Error('Content is not cached on this device.');
+  const record=await contentRecord(kind,id);if(!record || (!record.source&&!record.blob))throw new Error('[LAN-FILE-003] Content is not cached on this device. This desktop has metadata but not the original file.');
   const blob:Blob=kind==='source'?new Blob([record.source]):record.blob;
   if(!Number.isSafeInteger(offset)||offset<0||offset>blob.size)throw new Error('Invalid file offset.');
   const bytes=new Uint8Array(await blob.slice(offset,offset+512*1024).arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));

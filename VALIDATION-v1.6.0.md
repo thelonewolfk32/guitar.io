@@ -1,3 +1,17 @@
+# Desktop LAN repair validation — 22 October 2026
+
+The owner authorised normal desktop publication for the iOS build-161 handoff. This candidate includes all earlier V1.6 source already pushed to the development branch; the normal desktop release still needs its new Windows/Mac packaging workflow to pass before publication.
+
+Locally verified on Windows / Node 24.19.0:
+- 200 regression tests passed, zero failures, including the native pairing addition.
+- Desktop, backend, owner and mobile typechecks; desktop production build.
+- Real packaged desktop encrypted LAN GP/artwork/audio transfers, cached-file reuse, stale initialized queue repair, independent relay with original host stopped, restart and offline score opening.
+- Focused 50 GP / 49 artwork / zero-queue regression, missing descriptors, SHA-256 mismatch, account isolation and all-endpoint/direct-address pairing.
+
+Mac CI and final publication results are pending at this point. Physical iPhone build-161 acceptance and the owner's actual PC/Mac network/firewall/original-file audit remain device checks. Hosted services and purchases are configuration-dependent, not newly deployed by this desktop repair. See DESKTOP_SYNC_HANDOFF.md.
+
+The following is the retained earlier iOS-first evidence; its publication hold has been superseded by the owner's 22 October instruction.
+
 # V1.6 validation — 18 October 2026
 
 Status: iOS-first local setup/source candidate. No Supabase project, live billing, signing, TestFlight or physical-iPhone acceptance exists yet. The stable desktop Release remains unpublished.

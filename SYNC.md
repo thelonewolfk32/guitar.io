@@ -1,4 +1,6 @@
-# Guitar.io V1.5.0 local device sync
+# Guitar.io V1.6.0 local device sync
+
+For the 22 October PC/Mac file-replication repair and iOS build-161 compatibility, start with [DESKTOP_SYNC_HANDOFF.md](DESKTOP_SYNC_HANDOFF.md). V1.6 adds a paginated protocol-3 content manifest, legacy registration, explicit offline auditing and direct LAN-address pairing. The current Apple build handoff is [IOS_REACT_NATIVE_HANDOFF.md](IOS_REACT_NATIVE_HANDOFF.md); older iOS instructions below are historical.
 
 V1.5 retains the existing LAN protocol/schema, including the metadata repair and recent-activity sync described below. Windows/Mac are released; native iPhone compilation and device verification are pending. See [IOS_HANDOFF.md](IOS_HANDOFF.md) for the current Mac/iPhone setup. GitHub source/app updates and private-library LAN sync are separate connections.
 

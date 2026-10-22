@@ -35,4 +35,4 @@ Native Swift compilation, signing, App Groups, real-device sound and Apple purch
 The user has no Supabase project yet and requested the local setup package. Do not claim staging, live payments, private update hosting or TestFlight deployment is complete.
 Published GitHub releases/tags are immutable. Source repository: https://github.com/thelonewolfk32/guitar.io.
 
-- Cloud operations and private R2 recovery tooling are in CLOUD_OPERATIONS.md. Stable desktop publication follows iOS acceptance. No hosted restoration, new signing result or physical-device acceptance may be inferred from old CI.
+- Cloud operations and private R2 recovery tooling are in CLOUD_OPERATIONS.md. On 22 October the owner explicitly authorised publishing the desktop update to repair PC/Mac/iPhone LAN sync, superseding the earlier desktop hold. See DESKTOP_SYNC_HANDOFF.md. No hosted restoration, new signing result or physical-device acceptance may be inferred from old CI.

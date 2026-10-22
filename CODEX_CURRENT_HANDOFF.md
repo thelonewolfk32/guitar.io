@@ -1,5 +1,7 @@
 # Current Guitar.io handoff — V1.6
 
+22 October 2026: the owner requested and explicitly authorised a normal desktop release for the build-161 LAN handoff. DESKTOP_SYNC_HANDOFF.md describes protocol-3 manifests, local file registration, durable queue repair and independent desktop hosting. This supersedes the earlier desktop hold below. Preserve the newer iOS work on the owner's Mac; this repository does not contain all those unshared changes.
+
 Read AGENTS.md, MONETISATION.md, PC_SETUP.md, HOSTED_SERVICES.md, OWNER_SETUP.md, PRIVACY.md and IOS_REACT_NATIVE_HANDOFF.md.
 
 The user approved free Supabase cloud sync, five saved entries on Free, Premium automation/YouTube/unlimited song count, no ads, React Native Apple development, teacher foundations, owner administration, feedback and opt-in aggregate usage.

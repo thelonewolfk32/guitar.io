@@ -81,7 +81,7 @@ export function db() {
       cursor.onsuccess = () => {
         const c = cursor.result; if (!c) return;
         const song = normalize(c.value as Song), index = summarizeSong(song), { source, ...details } = song;
-        tx.objectStore('songSources').put({ id: song.id, source }); c.update(details); tx.objectStore('songIndex').put(index);
+        tx.objectStore('songSources').put({ id: song.id, source, hash: song.hash, byteLength: source.byteLength }); c.update(details); tx.objectStore('songIndex').put(index);
         for (const assetId of index.assetIds) tx.objectStore('assetRefs').put({ assetId, owner: `song:${song.id}` });
         journal(tx, deviceId, 'song', song.id, undefined, details, song.updatedAt);
         journal(tx, deviceId, 'source', song.id, undefined, { hash: song.hash, byteLength: source.byteLength }, song.createdAt);
@@ -92,7 +92,7 @@ export function db() {
         r.onsuccess = () => { for (const item of r.result || []) { if (item.artworkAssetId) tx.objectStore('assetRefs').put({ assetId: item.artworkAssetId, owner: `guitar:${item.id}` }); journal(tx, deviceId, key === 'guitars' ? 'guitar' : 'folder', item.id, undefined, item, new Date().toISOString()); } };
       }
       const assets = tx.objectStore('assets').openCursor();
-      assets.onsuccess = () => { const c = assets.result; if (c) { const { blob, ...meta } = c.value; journal(tx, deviceId, 'asset', String(c.key), undefined, { ...meta, byteLength: blob.size }, new Date().toISOString()); c.continue(); } };
+      assets.onsuccess = () => { const c = assets.result; if (c) { const { blob, ...meta } = c.value;if(blob?.size)journal(tx, deviceId, 'asset', String(c.key), undefined, { ...meta, byteLength: blob.size }, new Date().toISOString()); c.continue(); } };
     };
     q.onsuccess = () => { q.result.onversionchange = () => { q.result.close(); database = undefined!; }; resolve(q.result); };
     q.onerror = () => { database = undefined!; reject(q.error); };
@@ -117,7 +117,7 @@ export async function readSongSummary(id: string): Promise<SongSummary | undefin
 async function readSource(id: string): Promise<Uint8Array | undefined> {
   const cached = sources.get(id); if (cached) { remember(id, cached); return cached; }
   if (pendingSources.has(id)) return pendingSources.get(id);
-  const pending = (async () => { const d = await db(); storageMetrics.sourceReads++; let record = await request(d.transaction('songSources').objectStore('songSources').get(id));if(record && !record.source && missingContent){await missingContent('source',id);record=await request(d.transaction('songSources').objectStore('songSources').get(id));} if (record?.source) remember(id, record.source); return record?.source; })();
+  const pending = (async () => { const d = await db(); storageMetrics.sourceReads++; let record = await request(d.transaction('songSources').objectStore('songSources').get(id));if(await request(d.transaction('settings').objectStore('settings').get('lan:invalid-content:source/'+id)))record=record?{...record,source:undefined}:record;if((!record?.source) && missingContent){await missingContent('source',id);record=await request(d.transaction('songSources').objectStore('songSources').get(id));} if (record?.source) remember(id, record.source); return record?.source; })();
   pendingSources.set(id, pending); try { return await pending; } finally { pendingSources.delete(id); }
 }
 export async function readSong(id: string): Promise<Song | undefined> {
@@ -206,14 +206,14 @@ export async function saveSongs(songs: Song[], seeded = false, assets: Asset[] =
       for (const key of ['lastOpenedAt', 'lastPlayedAt'] as const) if (old?.[key] && (!next[key] || old[key] > next[key]!)) { next[key] = old[key]; if (key === 'lastPlayedAt') next.lastPlayedBar = old.lastPlayedBar; }
       const { source, tuningBuckets: _derived, ...details } = next, fields = changedFields(old, details).filter(k => !['updatedAt', 'fieldUpdatedAt'].includes(k));
       details.updatedAt = fields.length ? now : old?.updatedAt || now; details.fieldUpdatedAt = { ...old?.fieldUpdatedAt, ...Object.fromEntries(fields.map(k => [k, now])) };
-      if (!old) { tx.objectStore('songSources').put({ id: song.id, source }); storageMetrics.sourceWrites++; journal(tx, deviceId, 'source', song.id, undefined, { hash: song.hash, byteLength: source.byteLength }, now); }
+      if (!old) { tx.objectStore('songSources').put({ id: song.id, source, hash: song.hash, byteLength: source.byteLength }); storageMetrics.sourceWrites++; journal(tx, deviceId, 'source', song.id, undefined, { hash: song.hash, byteLength: source.byteLength }, now); }
       if (!old || !equal(old, details)) { tx.objectStore('songs').put(details); storageMetrics.songWrites++; journal(tx, deviceId, 'song', song.id, old, details, now); }
       next = { ...details, source }; saved.push(next);
       const affectsNotation = !oldIndex || fields.some(k => ['spliceEdits', 'tracks', 'trackIndex', 'sourceTunings', 'tuningEdits', 'noteEdits', 'tuning'].includes(k));
       const index: SongSummary = affectsNotation ? summarizeSong(next) : { ...oldIndex, ...Object.fromEntries(Object.keys(oldIndex).filter(k => k in details).map(k => [k, (details as unknown as Record<string, unknown>)[k]])), progress: songProgress(next), progressSplit:songProgressSplit(next), progressState: progressState(next), assetIds: assetIds(next), recordingKinds: [...new Set((next.media?.recordings || []).map(r => r.kind))] };
       if (!equal(oldIndex, index)) writeIndex(tx, deviceId, oldIndex, index, now);
     }
-    for (const asset of assets) { const old = await request(tx.objectStore('assets').get(asset.id)); if (old) continue; tx.objectStore('assets').put(asset); const thumb=thumbs.find(t=>t.id===asset.id);if(thumb?.blob)tx.objectStore('artworkThumbs').put(thumb); const { blob, ...meta } = asset; journal(tx, deviceId, 'asset', asset.id, undefined, { ...meta, byteLength: blob.size }, now); }
+    for (const asset of assets) { const old = await request(tx.objectStore('assets').get(asset.id)); if (old?.blob) continue; tx.objectStore('assets').put({...asset,byteLength:asset.blob.size}); const thumb=thumbs.find(t=>t.id===asset.id);if(thumb?.blob)tx.objectStore('artworkThumbs').put(thumb); const { blob, ...meta } = asset; journal(tx, deviceId, 'asset', asset.id, undefined, { ...meta, byteLength: blob.size }, now); tx.objectStore('settings').delete('lan:pending-content:asset/'+asset.id); }
     // Settings arrays stay compatible; the sync outbox records only changed IDs.
     for (const [key, incoming] of [['folders', folders], ['guitars', guitars]] as const) if (incoming) {
       const previous = await request(tx.objectStore('settings').get(key)) || [];
@@ -262,7 +262,7 @@ export async function removeSong(id: string): Promise<void> {
   if (index) { updateRefs(tx, deviceId, `song:${id}`, index.assetIds, [], now); tx.objectStore('songs').delete(id); tx.objectStore('songSources').delete(id); tx.objectStore('songIndex').delete(id); journal(tx, deviceId, 'song', id, undefined, undefined, now); journal(tx, deviceId, 'source', id, undefined, undefined, now); }
   cleanRemovedAssets(tx,deviceId,now);await done; sources.delete(id);announce();
 }
-export async function getAsset(id: string): Promise<Asset | undefined> { const d = await db(); storageMetrics.assetReads++;let asset=await request(d.transaction('assets').objectStore('assets').get(id));if(asset && !asset.blob && missingContent){await missingContent('asset',id);asset=await request(d.transaction('assets').objectStore('assets').get(id));}return asset?.blob?asset:undefined; }
+export async function getAsset(id: string): Promise<Asset | undefined> { const d = await db(); storageMetrics.assetReads++;let asset=await request(d.transaction('assets').objectStore('assets').get(id));if(await request(d.transaction('settings').objectStore('settings').get('lan:invalid-content:asset/'+id)))asset=asset?{...asset,blob:undefined}:asset;if(asset && !asset.blob && missingContent){await missingContent('asset',id);asset=await request(d.transaction('assets').objectStore('assets').get(id));}return asset?.blob?asset:undefined; }
 /** Explicit maintenance only; saves clean up just the removed references. */
 export async function pruneAssets(): Promise<void> {
   const d = await db(), tx = d.transaction(['assets', 'assetRefs', 'changes', 'settings', 'artworkThumbs'], 'readwrite'), done = complete(tx), deviceId = await request(tx.objectStore('settings').get('deviceId')), cursor = tx.objectStore('assets').openKeyCursor();

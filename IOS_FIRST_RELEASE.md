@@ -1,6 +1,6 @@
 # V1.6 iOS-first release gates
 
-The stable desktop release stays unpublished until all preceding gates pass. The repository version is not evidence of distribution. Staging users, credentials and grants are never copied into production. Export/import wanted test libraries instead.
+On 22 October 2026 the owner authorised a normal desktop V1.6 update to fix PC/Mac/iPhone LAN file replication before the remaining hosted/iOS gates. That explicit exception supersedes the previous desktop publication hold; it does not certify cloud, purchases or physical iPhone acceptance. See DESKTOP_SYNC_HANDOFF.md. The repository version is not evidence of distribution. Staging users, credentials and grants are never copied into production. Export/import wanted test libraries instead.
 
 | Order | Milestone | Work prepared in source | Evidence needed to advance |
 |---|---|---|---|

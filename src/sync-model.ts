@@ -36,7 +36,7 @@ export function projectSyncRow(row:SyncRow,after:number):SyncRow {
   return {...row,patch,mapPatches,fields:Object.keys(patch),versions,complete:after===0};
 }
 export function validateSyncRows(value:unknown):SyncRow[] {
-  if(!Array.isArray(value)||value.length>200)throw new Error('Invalid change page.');
+  if(!Array.isArray(value)||value.length>500)throw new Error('Invalid change page.');
   const entities=['song','source','asset','folder','guitar','section','recording','annotation'];
   for(const row of value){
     if(!row || !entities.includes(row.entity) || typeof row.entityId!=='string' || !row.entityId || row.entityId.length>700 || row.key!==syncKey(row.entity,row.entityId) || !['upsert','delete'].includes(row.operation) || !Number.isSafeInteger(row.revision) || row.revision<1 || !row.versions || typeof row.versions!=='object')throw new Error('Invalid sync entity.');

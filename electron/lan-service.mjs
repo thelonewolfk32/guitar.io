@@ -2,11 +2,18 @@ import http from 'node:http';
 import os from 'node:os';
 import {Bonjour} from 'bonjour-service';
 import {open,seal,privateIPv4,localEndpoint} from '../shared/lan-crypto.mjs';
+import {rankEndpoints,connectionProblem} from '../shared/lan-endpoints.mjs';
+
+export function networkEndpoints(interfaces,port){
+  if(!port)return [];
+  const rows=Object.entries(interfaces).flatMap(([name,addresses])=>(addresses||[]).filter(a=>a?.family==='IPv4'&&!a.internal&&privateIPv4(a.address)).map(a=>({endpoint:`http://${a.address}:${port}/sync`,priority:a.address.startsWith('169.254.')?100:/vpn|hyper-v|vethernet|wsl|docker|virtual|tun|tap|tailscale|zerotier/i.test(name)?10:0})));
+  return [...new Set(rows.sort((a,b)=>a.priority-b.priority).map(a=>a.endpoint))];
+}
 
 export class LanService {
   constructor(handler){this.handler=handler;this.peers=new Map();this.replay=new Map();this.server=undefined;this.bonjour=undefined;this.config=undefined;this.pending=0;}
   status(){return {available:true,enabled:!!this.server,name:this.config?.name || os.hostname(),endpoints:this.endpoints || [],discovered:[...this.peers.values()],error:this.error || ''};}
-  addresses(){const port=this.server?.address()?.port,addresses=port?Object.values(os.networkInterfaces()).flat().filter(a=>a?.family==='IPv4'&&!a.internal&&privateIPv4(a.address)).map(a=>`http://${a.address}:${port}/sync`):[];const routed=addresses.filter(a=>!a.includes('169.254.'));return routed.length?routed:addresses;}
+  addresses(){return networkEndpoints(os.networkInterfaces(),this.server?.address()?.port);}
   advertise(){this.service=this.bonjour.publish({name:`Guitar.io ${this.config.id}`,type:'guitario',port:this.server.address().port,txt:{id:this.config.id,name:this.config.name,protocol:'1',code:this.config.pairingCode || ''}});}
   async configure(config){
     if(!config.enabled){await this.stop();return this.status();}
@@ -39,7 +46,7 @@ export class LanService {
     this.endpoints=this.addresses();
     try{
       this.bonjour=new Bonjour();this.advertise();
-      const discovered=service=>{const id=service.txt?.id;if(!id||id===config.id)return;const all=(service.addresses || []).filter(privateIPv4).map(address=>`http://${address}:${service.port}/sync`),routed=all.filter(a=>!a.includes('169.254.')),endpoints=routed.length?routed:all;if(endpoints.length)this.peers.set(id,{id,name:service.txt?.name || 'Guitar.io',code:service.txt?.code || this.peers.get(id)?.code || '',endpoints});};
+      const discovered=service=>{const id=service.txt?.id;if(!id||id===config.id)return;const endpoints=rankEndpoints((service.addresses || []).filter(privateIPv4).map(address=>`http://${address}:${service.port}/sync`));if(endpoints.length)this.peers.set(id,{id,name:service.txt?.name || 'Guitar.io',code:service.txt?.code || this.peers.get(id)?.code || '',endpoints});};
       this.browser=this.bonjour.find({type:'guitario'},discovered);
       this.browser.on('txt-update',discovered);this.browser.on('srv-update',discovered);
       this.browser.on('down',service=>this.peers.delete(service.txt?.id));
@@ -47,6 +54,6 @@ export class LanService {
     }catch(e){this.error='Automatic discovery unavailable. Use the pairing address. '+e.message;}
     return this.status();
   }
-  async request(endpoint,body){localEndpoint(endpoint);const result=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(25000),redirect:'error'});if(!result.ok)throw new Error(result.status===403?'Pairing rejected. Check the pairing code and device clocks.':`LAN connection failed (${result.status}).`);const text=await result.text();if(text.length>64*1024*1024)throw new Error('Sync response too large.');return JSON.parse(text);}
+  async request(endpoint,body){localEndpoint(endpoint);let result;try{result=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(body?.op?.startsWith('pair:')?5000:25000),redirect:'error'});}catch(error){throw new Error(connectionProblem(error,endpoint));}if(!result.ok)throw new Error(result.status===403?'Pairing rejected. Check the pairing code and device clocks.':`LAN connection failed (${result.status}).`);const text=await result.text();if(text.length>64*1024*1024)throw new Error('Sync response too large.');return JSON.parse(text);}
   async stop(){if(this.networkTimer)clearInterval(this.networkTimer);this.browser?.stop();this.bonjour?.unpublishAll();this.bonjour?.destroy();this.bonjour=undefined;this.browser=undefined;this.peers.clear();this.endpoints=[];if(this.server){const server=this.server;this.server=undefined;server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}}
 }

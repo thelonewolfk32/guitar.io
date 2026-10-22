@@ -1,5 +1,5 @@
 import type { Song, SyncChange } from './types';
-import { db, storageStores, forgetSource } from './storage';
+import { db, storageStores, forgetSource, syncNow } from './storage';
 import { mergeSyncRow, projectSyncRow, validateSyncRows, type SyncRow } from './sync-model';
 import { summarizeSong } from './song-summary';
 import { assetIds } from './library-model';
@@ -32,10 +32,11 @@ export function withSyncBaselines(input:unknown,bases:unknown):SyncRow[]{
 export async function syncPage(after=0,limit=100){
   if(!Number.isSafeInteger(after)||after<0)throw new Error('Invalid device checkpoint.');
   const d=await db(),tx=d.transaction(['syncEntities','settings']);
-  const [rows,head]=await Promise.all([req(tx.objectStore('syncEntities').index('revision').getAll(IDBKeyRange.lowerBound(after,true),Math.min(100,Math.max(1,limit)))),req(tx.objectStore('settings').get('syncHead'))]);
+  if(!Number.isSafeInteger(limit)||limit<1)throw Error('Invalid metadata page size.');
+  const [rows,head]=await Promise.all([req(tx.objectStore('syncEntities').index('revision').getAll(IDBKeyRange.lowerBound(after,true),Math.min(500,limit))),req(tx.objectStore('settings').get('syncHead'))]);
   // Keep pages under 1 MiB unless a single saved splice is larger.
   const page:SyncRow[]=[];let size=0;
-  for(const row of rows){const delta=projectSyncRow(row,after),bytes=JSON.stringify(delta).length;if(page.length && size+bytes>1024*1024)break;page.push(delta);size+=bytes;}
+  for(const row of rows){const delta=projectSyncRow(row,after),bytes=new TextEncoder().encode(JSON.stringify(delta)).byteLength;if(page.length && size+bytes>1024*1024)break;page.push(delta);size+=bytes;}
   const cursor=page.length?page.at(-1)!.revision:Number(head)||after;
   return {rows:page,cursor,head:Number(head)||0,more:cursor<(Number(head)||0)};
 }
@@ -63,19 +64,20 @@ function queueContent(tx:IDBTransaction,kind:'source'|'asset',id:string,record:a
 }
 /** One-time repair for existing metadata-only libraries. Routine checks read
  * the small durable queue, never scan cached originals or parse scores. */
-export async function initializeContentQueue(){
+export async function initializeContentQueue(force=false){
   const d=await db(),tx=d.transaction(['settings','songSources','assets'],'readwrite'),p=done(tx);
-  if(!await req(tx.objectStore('settings').get('lan:content-queue-ready'))){
+  if(force || await req(tx.objectStore('settings').get('lan:content-queue-ready'))!==2){
+    tx.objectStore('settings').delete(pendingRange());
     for(const [store,kind] of [['songSources','source'],['assets','asset']] as const){
       const q=tx.objectStore(store).openCursor();
       q.onsuccess=()=>{const cursor=q.result;if(cursor){queueContent(tx,kind,String(cursor.key),cursor.value);cursor.continue();}};
     }
-    tx.objectStore('settings').put(true,'lan:content-queue-ready');
+    tx.objectStore('settings').put(2,'lan:content-queue-ready');
   }
   await p;
 }
 export async function pendingSyncContent():Promise<PendingContent[]>{
-  const d=await db();return req(d.transaction('settings').objectStore('settings').getAll(pendingRange()));
+  const d=await db();const items=await req<PendingContent[]>(d.transaction('settings').objectStore('settings').getAll(pendingRange()));return items.sort((a,b)=>Number(a.kind==='asset')-Number(b.kind==='asset')||a.id.localeCompare(b.id));
 }
 export async function clearPendingContent(kind:'source'|'asset',id:string){
   const d=await db(),tx=d.transaction('settings','readwrite'),p=done(tx);tx.objectStore('settings').delete(pendingKey(kind,id));await p;
@@ -146,7 +148,7 @@ export async function applySyncPage(input:unknown,checkpoint?:{peer:string;curso
   }catch(error){tx.abort();await p.catch(()=>{});const reason=error instanceof Error?error.message:String(error);throw new Error(`${current?.entity || 'page'} ${String(current?.patch?.title || current?.patch?.name || current?.entityId || '').slice(0,180)}: ${reason}`);}
   await p;return accepted;
 }
-export async function contentRecord(kind:'source'|'asset',id:string){const d=await db();return req(d.transaction(kind==='source'?'songSources':'assets').objectStore(kind==='source'?'songSources':'assets').get(id));}
+export async function contentRecord(kind:'source'|'asset',id:string){const d=await db(),tx=d.transaction([kind==='source'?'songSources':'assets','settings']);const [record,invalid]=await Promise.all([req(tx.objectStore(kind==='source'?'songSources':'assets').get(id)),req(tx.objectStore('settings').get(`lan:invalid-content:${kind}/${id}`))]);return record&&invalid?{...record,source:undefined,blob:undefined}:record;}
 export async function contentChunk(kind:'source'|'asset',id:string,offset:number){
   const record=await contentRecord(kind,id);if(!record || (!record.source&&!record.blob))throw new Error('Content is not cached on this device.');
   const blob:Blob=kind==='source'?new Blob([record.source]):record.blob;
@@ -161,11 +163,11 @@ function removeTransfer(tx:IDBTransaction,key:string){tx.objectStore('syncTransf
 export async function finishTransfer(kind:'source'|'asset',id:string,blob:Blob){
   const record=await contentRecord(kind,id);if(!record)throw new Error('Content was removed while downloading.');
   if(record.byteLength && blob.size!==record.byteLength){await discardTransfer(`${kind}/${id}`);throw new Error('Downloaded file size does not match.');}
-  const bytes=kind==='source'?new Uint8Array(await blob.arrayBuffer()):undefined;
-  if(kind==='source' && /^[a-f0-9]{64}$/.test(record.hash)){const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as BufferSource))].map(b=>b.toString(16).padStart(2,'0')).join('');if(hash!==record.hash){await discardTransfer(`${kind}/${id}`);throw new Error('Downloaded tab checksum does not match.');}}
+  const bytes=kind==='source'||/^[a-f0-9]{64}$/i.test(record.hash)?new Uint8Array(await blob.arrayBuffer()):undefined;
+  if(/^[a-f0-9]{64}$/i.test(record.hash)){const hash=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as BufferSource))].map(b=>b.toString(16).padStart(2,'0')).join('');if(hash!==record.hash.toLowerCase()){await discardTransfer(`${kind}/${id}`);throw new Error('Downloaded file checksum does not match.');}}
   const d=await db(),store=kind==='source'?'songSources':'assets',tx=d.transaction([store,'settings','syncTransfers','syncTransferChunks'],'readwrite'),p=done(tx);
   const current=await req(tx.objectStore(store).get(id));
   if(!current || current.hash!==record.hash){tx.abort();await p.catch(()=>{});throw new Error('Content was removed while downloading.');}
-  tx.objectStore(store).put({...current,...(kind==='source'?{source:bytes}:{blob:blob.slice(0,blob.size,current.mime)})});removeTransfer(tx,`${kind}/${id}`);queueContent(tx,kind,id,undefined);await p;
+  tx.objectStore(store).put({...current,byteLength:blob.size,...(kind==='source'?{source:bytes}:{blob:blob.slice(0,blob.size,current.mime)})});tx.objectStore('settings').delete(`lan:invalid-content:${kind}/${id}`);removeTransfer(tx,`${kind}/${id}`);queueContent(tx,kind,id,undefined);forgetSource(id);await p;
 }
 export async function cleanTransfers(){const d=await db(),tx=d.transaction(['syncTransfers','syncTransferChunks','changes','settings'],'readwrite'),p=done(tx);const rows=await req(tx.objectStore('syncTransfers').getAll());let bytes=0;for(const row of rows.sort((a,b)=>b.updatedAt-a.updatedAt)){bytes+=row.offset;if(row.updatedAt<Date.now()-7*86400000||bytes>64*1024*1024)removeTransfer(tx,row.key);}const head=Number(await req(tx.objectStore('settings').get('syncHead'))) || 0;if(head>2000)tx.objectStore('changes').delete(IDBKeyRange.upperBound(head-2000));await p;}

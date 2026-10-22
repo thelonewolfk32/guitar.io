@@ -88,7 +88,7 @@ with zipfile.ZipFile(args.runtime) as original, zipfile.ZipFile(output, "x", com
     add(out, "READ_ME_FIRST.md", (project / "MACOS_BUILD.md").read_bytes())
     add(out, "LICENSE.electron.txt", original.read("LICENSE"))
     add(out, "LICENSES.chromium.html", original.read("LICENSES.chromium.html"))
-    for name in ["THIRD_PARTY_NOTICES.md", f"CHANGELOG-v{version}.md", f"VALIDATION-v{version}.md", "GITHUB_RELEASES.md", "SYNC.md", "PC_SETUP.md", "HOSTED_SERVICES.md", "IOS_MONETISATION_HANDOFF.md", "IOS_REACT_NATIVE_HANDOFF.md", "OWNER_SETUP.md", "PRIVACY.md", "MONETISATION.md"]:
+    for name in ["THIRD_PARTY_NOTICES.md", f"CHANGELOG-v{version}.md", f"VALIDATION-v{version}.md", "GITHUB_RELEASES.md", "SYNC.md", "DESKTOP_SYNC_HANDOFF.md", "PC_SETUP.md", "HOSTED_SERVICES.md", "IOS_MONETISATION_HANDOFF.md", "IOS_REACT_NATIVE_HANDOFF.md", "OWNER_SETUP.md", "PRIVACY.md", "MONETISATION.md"]:
         add(out, name, (project / name).read_bytes())
 
 with zipfile.ZipFile(output) as check:

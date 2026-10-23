@@ -2,6 +2,8 @@
 
 23 October: user authorised the active-song catch-22 fix and a temporary 1,000-song testing allowance. See ACTIVE_SYNC_HANDOFF.md and VALIDATION-v1.6.1.md. Hosted quotas require the new migration/function; the newer iPhone working copy needs a targeted merge/rebuild.
 
+V1.6.1 is published from `26e97b6ec12f31cbfab9edd3e452e847cc7a4936` after the owner's explicit normal-auto-update approval. Windows/macOS 15/macOS 26 tag checks passed. The public stable feed exposes complete Windows/Mac/Source downloads with verified checksum metadata, and the original V1.5.1 and V1.6.0 updater parsers detect the update on both supported desktop platforms. Both unsigned simulator profiles passed for that source; physical iPhone integration and hosted deployment remain separate. See VALIDATION-v1.6.1.md.
+
 V1.6.0 is published from `0089ce43d01144a596076b0bd420f32a5fcbb572` through the normal updater. PR #1 is merged. Windows/macOS 15/macOS 26 release checks passed; the original V1.5.1 parser detects both verified downloads. See VALIDATION-v1.6.0.md for final evidence and the transient runner retry.
 
 22 October 2026: the owner requested and explicitly authorised a normal desktop release for the build-161 LAN handoff. DESKTOP_SYNC_HANDOFF.md describes protocol-3 manifests, local file registration, durable queue repair and independent desktop hosting. This supersedes the earlier desktop hold below. Preserve the newer iOS work on the owner's Mac; this repository does not contain all those unshared changes.

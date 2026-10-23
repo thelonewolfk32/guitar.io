@@ -28,7 +28,7 @@ export class NativeRepository {
  private exclusive<T>(task:()=>Promise<T>):Promise<T>{const result=this.serial.then(task);this.serial=result.then(()=>{},()=>{});return result;}
  async apply(input:unknown,checkpoint?:{key:string;cursor:number}){return this.exclusive(()=>this.applyRows(input,checkpoint));}
  async applyLan(input:unknown,checkpoint?:{key:string;cursor:number}){return this.exclusive(async()=>{
-  const rows=validateSyncRows(input),ids=[...new Set([...(await this.songs()).map(s=>s.id),...(await this.list<any>('pending')).map(p=>p.id)])],active=(await this.setting<any[]>('entries')||[]).filter(e=>e.active&&!e.deleted).map(e=>e.id),selection=selectSyncRows(rows,ids,active,featureAccess(account.entitlement).limits.songs);
+  const rows=validateSyncRows(input),ids=(await this.catalogue()).map(s=>s.id),active=(await this.setting<any[]>('entries')||[]).filter(e=>e.active&&!e.deleted).map(e=>e.id),selection=selectSyncRows(rows,ids,active,featureAccess(account.entitlement).limits.songs);
   if(account.session&&selection.admitted.length){if(this.scope!==account.session.user.id)throw Error('Open your account library before syncing.');await account.request('reserve-import',{entries:selection.admitted.map(id=>({id,kind:'score'}))});}
   await this.applyRows(selection.accepted,checkpoint,selection.deferred);return {accepted:selection.accepted.length,deferred:selection.deferred.length};
  });}
@@ -55,6 +55,8 @@ export class NativeRepository {
    song.sections=song.sectionsByTrack[song.trackIndex]||[];result.push(song);
   }return result;
  }
+ /** Account IDs and titles are selectable before any song/source file exists. */
+ async catalogue(){const all=new Map<string,any>((await this.setting<any[]>('entries')||[]).filter(e=>!e.deleted).map(e=>[e.id,{...e.details,id:e.id,kind:e.kind,title:e.details?.title||e.id}]));for(const pending of await this.list<any>('pending'))all.set(pending.id,pending);for(const song of await this.songs())all.set(song.id,{...song,kind:'score'});return [...all.values()];}
  async saveSong(song:any,assets:any[]=[],enforceAllowance=true){
   const all=await this.songs(),pending=await this.list<any>('pending'),before=all.find(s=>s.id===song.id),limit=featureAccess(account.entitlement).limits.songs;
   if(enforceAllowance&&!before&&!pending.some(e=>e.id===song.id)&&!canAddEntries(all.length+pending.length,1,account.entitlement))throw Error('Your saved-song allowance is full.');

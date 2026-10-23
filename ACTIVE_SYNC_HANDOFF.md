@@ -11,6 +11,7 @@ Cloud storage remains 150 MiB Free / 1 GiB Premium and 30 MiB per new file. No a
 ## Desktop/mobile integration
 
 - `head` retains protocol 3 and advertises `accountEntries`, `deferredApply`, `songPolicy` and `testingSongLimit` as optional compatibility fields. A peer's advertised allowance is informational, never a trusted entitlement grant.
+- Account catalogue entries are retained as selectable metadata independently of local score records. Native Account uses that catalogue, and refreshes it even when a transfer fails; a GP file is never a prerequisite to choosing active songs.
 - Authenticated LAN clients refresh the existing account `entries` route before reconciliation and use their cached selection offline. The Edge Function also accepts `account-entries` as an alias and pages database results, including retained deletion markers.
 - A paired client can request `{op:'account-entries',after:'',limit:100}` before any GP download. Response: `{entries:[{id,kind,active,details}],after,more}`. This is catalogue metadata only; selecting songs does not require score bytes, parsing, or importing every original.
 - Desktop `applySyncPage` serialises metadata admission, applies active rows and deletions, and atomically stores deferred rows alongside the received checkpoint. Deferred field versions are retained in `lan:deferred-sync:<entity-key>` settings and replay on the next sync after selection/capacity changes. Acknowledging a page does not discard its deferred edits.

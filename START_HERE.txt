@@ -1,12 +1,12 @@
-Guitar.io V1.6.0 local test candidate
+Guitar.io V1.6.1 desktop sync patch
 
-Read VALIDATION-v1.6.0.md for checks and remaining work.
-No Supabase project or live payment services are configured yet.
+Read VALIDATION-v1.6.1.md for checks and remaining work.
+Hosted accounts require configuration; apply the V1.6.1 migration/function for a hosted 1,000-song testing allowance.
 
 Windows: extract the full ZIP, then open Guitar.io.exe.
 Apple Silicon Mac: extract the Mac ZIP, run Prepare and open Guitar.io.command once, then open Guitar.io.app.
 
-Free: local/cloud sync, five saved songs or links, manual GP files and Learn (beta).
+Free: local/cloud sync, 1,000 saved songs or links during testing, manual GP files and Learn (beta).
 Premium: unlimited song count within 1 GiB and automatic tools; AUD $5/month or $50/year.
 No advertising. Existing songs and source files are preserved after downgrade.
 Choose active entries in Account & plans. Archived songs remain exportable.
@@ -30,3 +30,5 @@ HOSTED_SERVICES.md: staging, cloud sync, purchases and private updates.
 OWNER_SETUP.md: owner website, MFA, gifts and account allowances.
 IOS_REACT_NATIVE_HANDOFF.md: React Native Apple source and Mac/iPhone checks.
 No signed iOS binary or live cloud deployment is included.
+
+See ACTIVE_SYNC_HANDOFF.md for the targeted merge into your newer iPhone code and rebuild it before testing the phone with the enlarged allowance.

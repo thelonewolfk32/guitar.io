@@ -3,7 +3,7 @@
 | Capability | Free | Premium |
 |---|---|---|
 | Local/cloud sync, manual GP import, basic Learn | Included | Included |
-| Saved entries, including pending shared links | 5 | Unlimited count |
+| Saved entries, including pending shared links | 1,000 during testing (commercial plan: 5) | Unlimited count |
 | Cloud storage | 150 MiB | 1 GiB |
 | Individual new files | 30 MiB | 30 MiB |
 | Automatic sections / synchronised YouTube | Locked | Included |

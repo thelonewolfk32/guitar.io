@@ -2,11 +2,11 @@
 
 A guitar library and practice player for Windows and Apple Silicon Mac, with a React Native iPhone application under development.
 
-**V1.6.0 is a local test candidate.** The last published desktop release is V1.5.1. See [changes](CHANGELOG-v1.6.0.md) and [actual validation](VALIDATION-v1.6.0.md) before testing. No hosted backend or live purchases are configured in this package.
+**V1.6.1 fixes active-song syncing and temporarily allows 1,000 songs for testing.** See [downloads](https://github.com/thelonewolfk32/guitar.io/releases), [changes](CHANGELOG-v1.6.1.md), [validation](VALIDATION-v1.6.1.md) and the [desktop/iPhone handoff](ACTIVE_SYNC_HANDOFF.md). Hosted accounts and purchases require separate configuration.
 
 ## V1.6 model
 
-Cloud and local sync are free. Free accounts save five songs or shared links, with 150 MiB cloud storage. Premium adds unlimited song count within 1 GiB, automatic section suggestions, synchronised YouTube playback, online metadata/GP discovery and additional beta features, at AUD $5/month or $50/year. Files are at most 30 MiB. There are no advertisements.
+Cloud and local sync are free. During testing, Free accounts save 1,000 songs or shared links (the intended commercial allowance remains five), with 150 MiB cloud storage. Premium adds unlimited song count within 1 GiB, automatic section suggestions, synchronised YouTube playback, online metadata/GP discovery and additional beta features, at AUD $5/month or $50/year. Files are at most 30 MiB. There are no advertisements.
 
 Existing entries survive a downgrade: choose active songs in Account & plans; archived songs remain exportable and count towards additions. Manual GP import/editing, manual sections and Learn (beta) remain free. GP discovery opens source pages so users can choose an arrangement and supply their file.
 

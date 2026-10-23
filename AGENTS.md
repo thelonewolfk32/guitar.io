@@ -13,7 +13,7 @@ The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertis
 
 ## Product and privacy rules
 - No advertising. Cloud and LAN sync, manual imports, manual sections and basic Learn are free.
-- Free: five saved entries including pending music links, 150 MiB cloud storage; Premium: unlimited song count within 1 GiB. Every new file is at most 30 MiB.
+- Temporary 23 October testing policy: Free permits 1,000 saved entries including pending music links; commercial baseline remains five. Keep shared/library-policy.mjs and the latest Supabase migration consistent. Free storage stays 150 MiB; Premium: unlimited song count within 1 GiB. Every new file is at most 30 MiB.
 - Premium: automatic sections, synchronised YouTube, online enrichment/GP discovery and additional beta features. AUD 5/month or 50/year. Stem splitting has no active product or grant.
 - Archived entries remain stored and exportable and count towards new additions. After downgrade the user chooses active entries; do not delete their originals or progress.
 - Owner grants are independent of billing and audited. Admin endpoints require a verified owner role and MFA; never trust editable profile metadata for authorisation.
@@ -30,7 +30,7 @@ The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertis
 - Preserve desktop updater save/sync draining, package verification, skipped-version installation and rollback. iOS uses TestFlight/App Store updates.
 
 ## Verification and release
-Run relevant tests, desktop/admin/mobile typechecks and builds. Use isolated fixtures; never copy a personal profile between devices. Record actual results in VALIDATION-v1.6.0.md.
+Run relevant tests, desktop/admin/mobile typechecks and builds. Use isolated fixtures; never copy a personal profile between devices. Record patch results in VALIDATION-v1.6.1.md; retain the earlier V1.6.0 evidence.
 Native Swift compilation, signing, App Groups, real-device sound and Apple purchase validation must be reported separately from TypeScript/Metro/browser results.
 The user has no Supabase project yet and requested the local setup package. Do not claim staging, live payments, private update hosting or TestFlight deployment is complete.
 Published GitHub releases/tags are immutable. Source repository: https://github.com/thelonewolfk32/guitar.io.

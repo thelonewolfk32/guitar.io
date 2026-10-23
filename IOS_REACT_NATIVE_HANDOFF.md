@@ -1,3 +1,5 @@
+> 23 October V1.6.1: see [ACTIVE_SYNC_HANDOFF.md](ACTIVE_SYNC_HANDOFF.md) for the temporary 1,000-song policy and active-song deferral/replay. The iPhone must merge those focused changes and be rebuilt; preserve newer local iOS work.
+
 > 22 October desktop sync update: see [DESKTOP_SYNC_HANDOFF.md](DESKTOP_SYNC_HANDOFF.md) for protocol-3 manifests, PC/Mac independent file hosting and focused native endpoint retry changes. Preserve the newer build-161 iOS working copy on the owner's Mac; this checkout does not contain all of those unshared updates. Do not replace that mobile folder wholesale from the desktop Source ZIP.
 
 # Guitar.io V1.6 — React Native / Xcode Codex handoff

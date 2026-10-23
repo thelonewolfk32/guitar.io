@@ -1,10 +1,11 @@
 import type { Song, SyncChange } from './types';
-import { db, storageStores, forgetSource, syncNow } from './storage';
+import { db, storageStores, forgetSource, syncNow, storageScope } from './storage';
 import { mergeSyncRow, projectSyncRow, validateSyncRows, type SyncRow } from './sync-model';
 import { summarizeSong } from './song-summary';
 import { assetIds } from './library-model';
 import {validateBackup} from './domain.mjs';
 import {validateGuitars} from './guitars';
+import {syncParent} from '../shared/library-policy.mjs';
 
 export const req=<T>(q:IDBRequest<T>):Promise<T>=>new Promise((resolve,reject)=>{q.onsuccess=()=>resolve(q.result);q.onerror=()=>reject(q.error);});
 export const done=(tx:IDBTransaction)=>new Promise<void>((resolve,reject)=>{tx.oncomplete=()=>resolve();tx.onabort=tx.onerror=()=>reject(tx.error || new Error('Sync storage transaction failed.'));});
@@ -86,15 +87,31 @@ async function discardTransfer(key:string){
   const d=await db(),tx=d.transaction(['syncTransfers','syncTransferChunks'],'readwrite'),p=done(tx);removeTransfer(tx,key);await p;
 }
 /** Merge, queue missing bytes and checkpoint atomically. */
-let incomingGuard:((rows:SyncRow[])=>Promise<void>)|undefined;
+let incomingGuard:((rows:SyncRow[])=>Promise<void|{rows:SyncRow[];deferred:SyncRow[]}>)|undefined;
 export function setIncomingGuard(guard:typeof incomingGuard){incomingGuard=guard;}
-export async function applySyncPage(input:unknown,checkpoint?:{peer:string;cursor:number}){
-  if(!checkpoint?.peer.startsWith('cloud:'))await incomingGuard?.(validateSyncRows(input));
-  const incoming=validateSyncRows(input),d=await db(),tx=d.transaction(storageStores,'readwrite'),p=done(tx),affected=new Set<string>();let accepted=0;
+const deferredPrefix='lan:deferred-sync:';
+export async function deferredSyncRows():Promise<SyncRow[]>{const d=await db();return req(d.transaction('settings').objectStore('settings').getAll(IDBKeyRange.bound(deferredPrefix,deferredPrefix+'\uffff')));}
+export async function replayDeferredSync(){const rows=await deferredSyncRows();let accepted=0;for(let i=0;i<rows.length;i+=100)accepted+=await applySyncPage(rows.slice(i,i+100).map(row=>projectSyncRow(row,0)));return accepted;}
+let applying:Promise<unknown>=Promise.resolve();
+export function applySyncPage(input:unknown,checkpoint?:{peer:string;cursor:number}):Promise<number>{
+  const scope=storageScope(),task=applying.then(()=>{if(storageScope()!==scope)throw Error('Account changed before metadata could be applied.');return applySyncRows(input,checkpoint,scope);});applying=task.catch(()=>{});return task;
+}
+async function applySyncRows(input:unknown,checkpoint:{peer:string;cursor:number}|undefined,scope:string){
+  const original=validateSyncRows(input),selection=!checkpoint?.peer.startsWith('cloud:')?await incomingGuard?.(original):undefined;
+  if(storageScope()!==scope)throw Error('Account changed before metadata could be applied.');
+  const incoming=selection?validateSyncRows(selection.rows):original,deferred=selection?validateSyncRows(selection.deferred):[],d=await db(),tx=d.transaction(storageStores,'readwrite'),p=done(tx),affected=new Set<string>();let accepted=0;
   let current:SyncRow|undefined;
   try{
     let clock=Number(await req(tx.objectStore('settings').get('syncClock'))) || 0;
-    for(const change of incoming){
+    for(const row of deferred){
+      clock=Math.max(clock,...Object.values(row.versions).map(stamp=>Date.parse(stamp.timestamp)));
+      const previous=await req<SyncRow|undefined>(tx.objectStore('settings').get(deferredPrefix+row.key))||await req<SyncRow|undefined>(tx.objectStore('syncEntities').get(row.key)),merged=mergeSyncRow(previous,row,row.revision)||previous!;
+      if(merged.operation==='upsert')requireMeta(merged,materialize(merged));
+      tx.objectStore('settings').put(projectSyncRow(merged,0),deferredPrefix+row.key);
+    }
+    for(let change of incoming){
+      const waiting=await req<SyncRow|undefined>(tx.objectStore('settings').get(deferredPrefix+change.key));
+      if(waiting){change=projectSyncRow(mergeSyncRow(waiting,change,change.revision)||waiting,0);tx.objectStore('settings').delete(deferredPrefix+change.key);}
       current=change;
       const old=await req(tx.objectStore('syncEntities').get(change.key)),merged=mergeSyncRow(old,change,1);if(!merged)continue;
       const data=materialize(merged);if(merged.operation==='upsert')requireMeta(merged,data);
@@ -102,6 +119,7 @@ export async function applySyncPage(input:unknown,checkpoint?:{peer:string;curso
       for(const [key,v] of Object.entries(merged.versions))if(v.revision===1 && (!old || JSON.stringify(old.versions[key])!==JSON.stringify(v)))v.revision=revision;
       merged.revision=revision;tx.objectStore('syncEntities').put(merged);tx.objectStore('settings').put(revision,'syncHead');accepted++;clock=Math.max(clock,...Object.values(change.versions).map(s=>Date.parse(s.timestamp)));
       const id=change.entityId,deleted=merged.operation==='delete';
+      if(change.entity==='song'&&deleted){const waiting=await req<SyncRow[]>(tx.objectStore('settings').getAll(IDBKeyRange.bound(deferredPrefix,deferredPrefix+'\uffff')));for(const row of waiting)if(syncParent(row)===id)tx.objectStore('settings').delete(deferredPrefix+row.key);}
       if(change.entity==='song'){
         if(deleted){const index=await req(tx.objectStore('songIndex').get(id));for(const assetId of index?.assetIds || [])tx.objectStore('assetRefs').delete([assetId,`song:${id}`]);tx.objectStore('songs').delete(id);tx.objectStore('songIndex').delete(id);tx.objectStore('songSources').delete(id);queueContent(tx,'source',id,undefined);forgetSource(id);}else{
           const previous=await req(tx.objectStore('songs').get(id));if(previous?.hash && previous.hash!==data.hash)throw new Error('A paired device tried to replace an immutable tab.');

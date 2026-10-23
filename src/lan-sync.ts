@@ -1,5 +1,5 @@
-import {getDeviceId,setMissingContentLoader,readLibraryIndex,db} from './storage';
-import {applySyncPage,syncPage,syncHead,syncSetting,setSyncSetting,contentChunk,contentRecord,storeTransfer,transferProgress,transferChunks,finishTransfer,cleanTransfers,missingSyncBases,syncBaselines,withSyncBaselines,initializeContentQueue,pendingSyncContent,clearPendingContent,req} from './sync-storage';
+import {getDeviceId,setMissingContentLoader,readLibraryIndex,db,storageScope} from './storage';
+import {applySyncPage,syncPage,syncHead,syncSetting,setSyncSetting,contentChunk,contentRecord,storeTransfer,transferProgress,transferChunks,finishTransfer,cleanTransfers,missingSyncBases,syncBaselines,withSyncBaselines,initializeContentQueue,pendingSyncContent,clearPendingContent,req,deferredSyncRows,replayDeferredSync} from './sync-storage';
 import {validateSyncRows,type SyncRow} from './sync-model';
 import {seal,open,newSecret,parsePairing,pairingCode,base64,unbase64} from '../shared/lan-crypto.mjs';
 
@@ -7,16 +7,19 @@ import {shortCode,pairingIdentity,pairingSession,pairingCommit} from '../shared/
 import {rankEndpoints,directEndpoint,connectionProblem} from '../shared/lan-endpoints.mjs';
 import {contentManifest,repairLocalContent,auditOfflineContent} from './content-audit';
 import {version} from '../package.json';
+import {accountEntriesPage,isContentActive,refreshEntries,contentSelection} from './library-access';
+import {account} from './account';
+import {SONG_POLICY} from '../shared/library-policy.mjs';
 export type LanStatus={available:boolean;enabled:boolean;name:string;endpoints:string[];discovered:{id:string;name:string;code?:string;endpoints:string[]}[];error?:string;wifi?:boolean};
 export type LanConfig={enabled:boolean;id:string;secret:string;name:string;pairingCode?:string;autoSync?:boolean};
 export type Peer={id:string;name:string;secret:string;endpoints:string[];lastSync?:string;error?:string;clientOnly?:boolean};
 export type SyncEvent={at:string;stage:string;message:string;error?:boolean;peer?:string;entity?:string};
-export type SyncView={enabled:boolean;available:boolean;name:string;code:string;peers:Peer[];busy:boolean;bytes:number;pendingFiles:number;offlineComplete:boolean;lastSync?:string;error:string;waiting:boolean;autoSync:boolean;events:SyncEvent[];stage:string;incoming?:{id:string;name:string;digits:string}};
+export type SyncView={enabled:boolean;available:boolean;name:string;code:string;peers:Peer[];busy:boolean;bytes:number;pendingFiles:number;offlineComplete:boolean;deferredRecords:number;lastSync?:string;error:string;waiting:boolean;autoSync:boolean;events:SyncEvent[];stage:string;incoming?:{id:string;name:string;digits:string}};
 declare global {interface Window { guitarLan?:{
   configure:(config:LanConfig)=>Promise<LanStatus>;status:()=>Promise<LanStatus>;request:(endpoint:string,body:unknown)=>Promise<unknown>;
   onRequest?:(callback:(payload:any,deviceId:string)=>Promise<unknown>)=>()=>void;
 };}}
-const initial:SyncView={enabled:false,available:false,name:'Guitar.io',code:'',peers:[],busy:false,bytes:0,pendingFiles:0,offlineComplete:false,error:'',waiting:false,autoSync:true,events:[],stage:'Idle'};
+const initial:SyncView={enabled:false,available:false,name:'Guitar.io',code:'',peers:[],busy:false,bytes:0,pendingFiles:0,offlineComplete:false,deferredRecords:0,error:'',waiting:false,autoSync:true,events:[],stage:'Idle'};
 export class SyncEngine {
   view:SyncView={...initial};private config?:LanConfig;private timer?:ReturnType<typeof setTimeout>;private listeners=new Set<()=>void>();private disconnect?:()=>void;private disposed=false;private busy=false;private wake?:()=>void;private transfers=new Map<string,Promise<void>>();
   private activeDownloads=0;private downloadWaiters:(()=>void)[]=[];private changed?:()=>void;
@@ -32,7 +35,7 @@ export class SyncEngine {
   private log(stage:string,message:string,peer?:string,error=false,entity?:string){const events=[...this.view.events,{at:new Date().toISOString(),stage,message:message.slice(0,700),peer,error,entity}].slice(-120);this.update({events});try{window.localStorage.setItem('guitario-sync-diagnostics',JSON.stringify(events));}catch{}}
   clearDiagnostics(){this.update({events:[]});try{window.localStorage.removeItem('guitario-sync-diagnostics');}catch{}}
   private applied(){this.update({offlineComplete:false});this.onChanges();window.dispatchEvent(new Event('guitario:synced'));}
-  async diagnostics(){const native=await window.guitarLan?.status(),library=await readLibraryIndex();return {version,protocol:3,at:new Date().toISOString(),stage:this.view.stage,sessionWireBytes:this.view.bytes,enabled:this.view.enabled,autoSync:this.view.autoSync,network:{endpoints:native?.endpoints || [],discovered:native?.discovered.map(p=>({name:p.name,endpoints:p.endpoints})),error:native?.error},peers:await Promise.all(this.view.peers.map(async p=>({name:p.name,endpoints:p.endpoints,error:p.error,lastSuccessfulSync:p.lastSync,pullCheckpoint:await syncSetting(`pull:${p.id}`),pushCheckpoint:await syncSetting(`push:${p.id}`)}))),content:await auditOfflineContent(),catalogue:{songs:library.songs.map(s=>({id:s.id,title:s.title,artist:s.artist,album:s.album,artworkAssetId:s.artworkAssetId,lastOpenedAt:s.lastOpenedAt,lastPlayedAt:s.lastPlayedAt,lastPlayedBar:s.lastPlayedBar}))},events:this.view.events};}
+  async diagnostics(){const native=await window.guitarLan?.status(),library=await readLibraryIndex();return {version,protocol:3,at:new Date().toISOString(),stage:this.view.stage,sessionWireBytes:this.view.bytes,enabled:this.view.enabled,autoSync:this.view.autoSync,network:{endpoints:native?.endpoints || [],discovered:native?.discovered.map(p=>({name:p.name,endpoints:p.endpoints})),error:native?.error},peers:await Promise.all(this.view.peers.map(async p=>({name:p.name,endpoints:p.endpoints,error:p.error,lastSuccessfulSync:p.lastSync,pullCheckpoint:await syncSetting(`pull:${p.id}`),pushCheckpoint:await syncSetting(`push:${p.id}`)}))),content:await auditOfflineContent(),activeContent:await auditOfflineContent((await contentSelection()).includes),deferredMetadata:(await deferredSyncRows()).length,catalogue:{songs:library.songs.map(s=>({id:s.id,title:s.title,artist:s.artist,album:s.album,artworkAssetId:s.artworkAssetId,lastOpenedAt:s.lastOpenedAt,lastPlayedAt:s.lastPlayedAt,lastPlayedBar:s.lastPlayedBar}))},events:this.view.events};}
   async start(){
     this.disposed=false;
     try{const saved=JSON.parse(window.localStorage.getItem('guitario-sync-diagnostics') || '[]');if(Array.isArray(saved))this.update({events:saved.slice(-120)});}catch{}
@@ -126,7 +129,8 @@ export class SyncEngine {
     }
     if(await syncSetting(`blocked:${_deviceId}`))throw new Error('This device was removed. Pair it again.');
     if(payload?.op==='hello' && payload.peer){if(payload.peer.id!==_deviceId)throw new Error('Invalid peer identity.');await this.rememberPeer(payload.peer);}
-    if(payload?.op==='hello'||payload?.op==='head')return {id:this.config.id,name:this.config.name,head:await syncHead(),ready:!this.updatePaused&&this.canApply(),protocol:3,contentUpload:true,contentManifest:true};
+    if(payload?.op==='hello'||payload?.op==='head')return {id:this.config.id,name:this.config.name,head:await syncHead(),ready:!this.updatePaused&&this.canApply(),protocol:3,contentUpload:true,contentManifest:true,accountEntries:true,deferredApply:true,songPolicy:SONG_POLICY.version,testingSongLimit:SONG_POLICY.freeSongs};
+    if(payload?.op==='account-entries')return accountEntriesPage(payload.after??'',payload.limit??100);
     if(payload?.op==='content-manifest')return contentManifest(payload.after??'',payload.limit??100);
     if(payload?.op==='changes')return syncPage(payload.after,payload.limit);
     if(payload?.op==='baselines')return {rows:await syncBaselines(payload.keys)};
@@ -135,14 +139,15 @@ export class SyncEngine {
       if(payload.after!==undefined && (typeof payload.after!=='string'||payload.after.length>210))throw new Error('Invalid file checkpoint.');
       await initializeContentQueue();
       for(const [key,item] of this.uploads)if(item.updatedAt<Date.now()-120000){if(item.timer)clearTimeout(item.timer);item.reject(new Error('File upload was interrupted. Use Sync now to resume.'));this.uploads.delete(key);}
-      const pending=(await pendingSyncContent()).sort((a,b)=>`${a.kind}/${a.id}`<`${b.kind}/${b.id}`?-1:1).filter(item=>`${item.kind}/${item.id}`>(payload.after || '')),page=pending.slice(0,100);
+      const selection=await contentSelection(),activePending=(await pendingSyncContent()).filter(item=>selection.includes(item.kind,item.id));
+      const pending=activePending.sort((a,b)=>`${a.kind}/${a.id}`<`${b.kind}/${b.id}`?-1:1).filter(item=>`${item.kind}/${item.id}`>(payload.after || '')),page=pending.slice(0,100);
       return {files:await Promise.all(page.map(async item=>({...item,offset:this.uploads.get(`${item.kind}/${item.id}`)?.offset || (await transferProgress(`${item.kind}/${item.id}`))?.offset || 0}))),more:pending.length>page.length};
     }
     if(payload?.op==='put-blob'){
       if(this.updatePaused||!this.canApply())return {busy:true};
       this.activeIncoming++;try{return await this.receiveContent(payload);}finally{this.activeIncoming--;}
     }
-    if(payload?.op==='apply'){if(this.updatePaused||!this.canApply())return {busy:true};this.activeIncoming++;try{const needs=await missingSyncBases(payload.rows);if(needs.length){this.log('Metadata repair',`Requested ${needs.length} missing base records.`);return {needs};}const accepted=await applySyncPage(payload.rows);if(accepted){this.applied();this.logRows('Received',validateSyncRows(payload.rows),accepted);this.schedule(500);}return {accepted};}catch(error){this.log('Incoming metadata',error instanceof Error?error.message:String(error),undefined,true);throw error;}finally{this.activeIncoming--;}}
+    if(payload?.op==='apply'){if(this.updatePaused||!this.canApply())return {busy:true};this.activeIncoming++;try{const needs=await missingSyncBases(payload.rows);if(needs.length){this.log('Metadata repair',`Requested ${needs.length} missing base records.`);return {needs};}const accepted=await applySyncPage(payload.rows),deferred=(await deferredSyncRows()).length;if(accepted){this.applied();this.logRows('Received',validateSyncRows(payload.rows),accepted);this.schedule(500);}return {accepted,deferred};}catch(error){this.log('Incoming metadata',error instanceof Error?error.message:String(error),undefined,true);throw error;}finally{this.activeIncoming--;}}
     throw new Error('Unknown sync operation.');
   }
   async run(automatic=false){
@@ -150,7 +155,7 @@ export class SyncEngine {
     if(this.disposed||this.updatePaused||this.busy)return;this.busy=true;let checkpointsComplete=true;
     try{
       if(!this.config?.enabled||document.visibilityState==='hidden'&&document.documentElement.classList.contains('native-ios')){return;}
-      this.update({busy:true,offlineComplete:false,stage:'Checking local files'});if(!automatic)await this.repairContent();else await initializeContentQueue();this.update({error:'',pendingFiles:(await pendingSyncContent()).length,waiting:!this.canApply(),stage:'Checking device revisions'});this.log('Check',automatic?'Background revision check.':'Manual revision check.');
+      this.update({busy:true,offlineComplete:false,stage:'Checking active songs'});if(account.session&&storageScope()===account.session.user.id)try{await refreshEntries();}catch(error){this.log('Account selection','Using the last saved selection while the account service is unavailable.',undefined,true);}const replayed=await replayDeferredSync();if(replayed)this.applied();if(!automatic)await this.repairContent();else await initializeContentQueue();this.update({error:'',pendingFiles:(await pendingSyncContent()).length,waiting:!this.canApply(),stage:'Checking device revisions'});this.log('Check',automatic?'Background revision check.':'Manual revision check.');
       for(const peer of this.view.peers){if(peer.clientOnly)continue;try{
         const remote=await this.call(peer,{op:'head'}),after=Number(await syncSetting<number>(`pull:${peer.id}`)) || 0;
         if(!Number.isSafeInteger(remote.head)||remote.head<0)throw Error('Invalid peer head.');if(after>remote.head)throw new Error('This device was reset. Remove it and pair it again.');
@@ -163,9 +168,9 @@ export class SyncEngine {
         if(Number(await syncSetting(`pull:${peer.id}`)||0)!==remote.head||remote.ready&&Number(await syncSetting(`push:${peer.id}`)||0)<await syncHead())checkpointsComplete=false;peer.lastSync=new Date().toISOString();peer.error='';this.log('Checked','Revision check completed.',peer.name);
       }catch(error){peer.error=error instanceof Error?error.message:String(error);this.log('Sync failed',peer.error,peer.name,true);}}
       if(this.canApply() && this.view.enabled && !this.disposed && !this.updatePaused)await this.downloadPendingContent();
-      const audit=await auditOfflineContent(),metadataPending=!checkpointsComplete||this.view.peers.some(p=>!!p.error)||!this.canApply();
+      const selection=await contentSelection(),audit=await auditOfflineContent(selection.includes),metadataPending=!checkpointsComplete||this.view.peers.some(p=>!!p.error)||!this.canApply();
       if(!audit.complete&&!this.view.error)this.update({error:`[LAN-FILE-002] Offline library is incomplete: ${audit.missingSources.length} GP files and ${audit.missingArtwork.length} artwork files missing; ${audit.pending} transfers queued. Keep a paired device containing the originals awake.`});
-      this.update({offlineComplete:audit.complete&&!metadataPending,pendingFiles:audit.pending});
+      this.update({offlineComplete:audit.complete&&!metadataPending,pendingFiles:audit.pending,deferredRecords:(await deferredSyncRows()).length});
       await setSyncSetting('peers',this.view.peers);this.update({peers:[...this.view.peers],lastSync:new Date().toISOString()});
     }catch(e){this.update({error:String(e)});this.log('Sync failed',String(e),undefined,true);}finally{this.busy=false;this.update({busy:false,stage:this.view.error||this.view.peers.some(p=>p.error)?'Needs attention':this.view.pendingFiles?'Waiting for files':'Idle'});const errors=!!this.view.error||this.view.peers.some(p=>p.error);this.schedule(errors?60000:30000);}
   }
@@ -251,7 +256,7 @@ export class SyncEngine {
     return {offset:item.offset};
   }
   private async downloadPendingContent(){
-    const pending=await pendingSyncContent(),failures:string[]=[];let next=0,completed=0;
+    const selection=await contentSelection(),pending=(await pendingSyncContent()).filter(item=>selection.includes(item.kind,item.id)),failures:string[]=[];let next=0,completed=0;
     this.update({pendingFiles:pending.length});if(!pending.length)return;
     if(!this.view.peers.some(peer=>!peer.clientOnly&&!peer.error)){this.update({error:`${pending.length} files still need downloading. Keep the paired source device awake and use Sync now to retry.`});return;}
     this.log('Files',`Downloading ${pending.length} missing files for offline use.`);
@@ -259,10 +264,10 @@ export class SyncEngine {
       if(this.disposed||this.updatePaused||!this.view.enabled||document.visibilityState==='hidden'&&document.documentElement.classList.contains('native-ios'))return;
       const item=pending[next++];this.update({stage:`Downloading files · ${completed}/${pending.length} · ${item.name}`});
       try{await this.fetchContent(item.kind,item.id);}catch(error){failures.push(`${item.name}: ${error instanceof Error?error.message:String(error)}`);}
-      completed++;this.update({pendingFiles:(await pendingSyncContent()).length});
+      completed++;this.update({pendingFiles:(await pendingSyncContent()).filter(item=>selection.includes(item.kind,item.id)).length});
     }};
     await Promise.all([worker(),worker()]);
-    const remaining=(await pendingSyncContent()).length;
+    const remaining=(await pendingSyncContent()).filter(item=>selection.includes(item.kind,item.id)).length;
     this.update({pendingFiles:remaining,error:failures.length&&remaining?`${remaining} file${remaining===1?'':'s'} still need downloading. Keep the paired source device awake and use Sync now to retry. ${failures[0]}`:''});
     this.log('Files',remaining?`${remaining} files still pending.`:'Queued downloads finished. Checking all library references.',undefined,!!failures.length);
   }

@@ -27,7 +27,9 @@ export function featureRoutes({rest,env,fetcher}:Context){
   }return metadata;
  }
  return {snapshot,owner,async handle(route:string,id:string,token:string,body:any){
-  if(route==='entries')return {entries:await rest('library_entries?user_id=eq.'+id)};
+  if(route==='entries'||route==='account-entries'){
+   const entries:any[]=[];for(let offset=0;offset<100000;offset+=1000){const page=await rest('library_entries?user_id=eq.'+id+'&order=id.asc&limit=1000&offset='+offset);entries.push(...page);if(page.length<1000)return {entries};}throw Error('Account catalogue is too large; contact support.');
+  }
   if(route==='reserve-entries'||route==='reserve-import'){
    if(!Array.isArray(body.entries)||body.entries.length>(route==='reserve-import'?10000:100))throw Error('Invalid song reservations.');
    for(const e of body.entries){if(typeof e.id!=='string'||e.id.length>200||!['pending','score'].includes(e.kind))throw Error('Invalid entry.');if(e.kind==='pending'){const link=parseSongLink(e.details?.link?.url||'');e.details={title:String(e.details.title||'Shared song').slice(0,200),artist:String(e.details.artist||'').slice(0,200),link,createdAt:new Date().toISOString()};}}

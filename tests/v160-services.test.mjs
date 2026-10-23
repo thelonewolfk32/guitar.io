@@ -1,9 +1,9 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs/promises';import {PGlite} from '@electric-sql/pglite';import {entitlementFor,featureAccess,canAddEntries} from '../src/plans.ts';import {parseSongLink} from '../src/share-model.ts';import {PracticeTimer} from '../src/education.ts';import {createHandler} from '../supabase/functions/guitario/service.ts';
 const a='00000000-0000-4000-8000-000000000001',b='00000000-0000-4000-8000-000000000002';
 test('free capabilities and independent owner grants expire without granting cloud billing privileges',()=>{
- const free=featureAccess();assert(free.cloudSync&&free.learning);assert(!free.autoSections&&!free.youtubeSync&&!free.onlineImport);assert.equal(free.limits.songs,5);assert.equal(free.limits.bytes,150*1024**2);
+ const free=featureAccess();assert(free.cloudSync&&free.learning);assert(!free.autoSections&&!free.youtubeSync&&!free.onlineImport);assert.equal(free.limits.songs,1000);assert.equal(free.limits.bytes,150*1024**2);
  const now=Date.parse('2026-10-17'),grants=[{id:'gift',source:'owner',kind:'premium',expiresAt:'2026-10-18'},{id:'goodwill',source:'owner',kind:'limits',extraSongs:3}];
- assert.equal(featureAccess(entitlementFor(grants,now),now).limits.songs,null);assert.equal(featureAccess(entitlementFor(grants,now+2*86400000),now+2*86400000).limits.songs,8);assert.equal(canAddEntries(5,1),false);
+ assert.equal(featureAccess(entitlementFor(grants,now),now).limits.songs,null);assert.equal(featureAccess(entitlementFor(grants,now+2*86400000),now+2*86400000).limits.songs,1003);assert.equal(canAddEntries(1000,1),false);
 });
 test('sharing canonicalises song identity and rejects credentials, playlists and unrelated URLs',()=>{
  assert.equal(parseSongLink('Song https://open.spotify.com/track/1234567890123456789012?si=tracking').url,'https://open.spotify.com/track/1234567890123456789012');

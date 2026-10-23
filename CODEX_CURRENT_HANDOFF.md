@@ -1,4 +1,6 @@
-# Current Guitar.io handoff — V1.6.0 published
+# Current Guitar.io handoff — V1.6.1 active-sync patch
+
+23 October: user authorised the active-song catch-22 fix and a temporary 1,000-song testing allowance. See ACTIVE_SYNC_HANDOFF.md and VALIDATION-v1.6.1.md. Hosted quotas require the new migration/function; the newer iPhone working copy needs a targeted merge/rebuild.
 
 V1.6.0 is published from `0089ce43d01144a596076b0bd420f32a5fcbb572` through the normal updater. PR #1 is merged. Windows/macOS 15/macOS 26 release checks passed; the original V1.5.1 parser detects both verified downloads. See VALIDATION-v1.6.0.md for final evidence and the transient runner retry.
 

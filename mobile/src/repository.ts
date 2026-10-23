@@ -1,7 +1,8 @@
 import {open,type DB,type Transaction} from '@op-engineering/op-sqlite';
 import {Dirs,FileSystem} from 'react-native-file-access';
 import {toByteArray} from 'base64-js';
-import {mergeSyncRow,validateSyncRows,type SyncRow} from '../../src/sync-model';
+import {mergeSyncRow,projectSyncRow,validateSyncRows,type SyncRow} from '../../src/sync-model';
+import {selectSyncRows,syncParent} from '../../shared/library-policy.mjs';
 import type {SyncChange} from '../../src/types';
 import {mobileAccount as account} from './api';import {featureAccess,canAddEntries} from '../../src/plans';
 export class NativeRepository {
@@ -26,10 +27,18 @@ export class NativeRepository {
  }
  private exclusive<T>(task:()=>Promise<T>):Promise<T>{const result=this.serial.then(task);this.serial=result.then(()=>{},()=>{});return result;}
  async apply(input:unknown,checkpoint?:{key:string;cursor:number}){return this.exclusive(()=>this.applyRows(input,checkpoint));}
- private async applyRows(input:unknown,checkpoint?:{key:string;cursor:number}){
+ async applyLan(input:unknown,checkpoint?:{key:string;cursor:number}){return this.exclusive(async()=>{
+  const rows=validateSyncRows(input),ids=[...new Set([...(await this.songs()).map(s=>s.id),...(await this.list<any>('pending')).map(p=>p.id)])],active=(await this.setting<any[]>('entries')||[]).filter(e=>e.active&&!e.deleted).map(e=>e.id),selection=selectSyncRows(rows,ids,active,featureAccess(account.entitlement).limits.songs);
+  if(account.session&&selection.admitted.length){if(this.scope!==account.session.user.id)throw Error('Open your account library before syncing.');await account.request('reserve-import',{entries:selection.admitted.map(id=>({id,kind:'score'}))});}
+  await this.applyRows(selection.accepted,checkpoint,selection.deferred);return {accepted:selection.accepted.length,deferred:selection.deferred.length};
+ });}
+ async replayLanDeferred(){const rows=await this.list<SyncRow>('deferredSync');for(let i=0;i<rows.length;i+=100)await this.applyLan(rows.slice(i,i+100).map(row=>projectSyncRow(row,0)));}
+ private async applyRows(input:unknown,checkpoint?:{key:string;cursor:number},deferred:SyncRow[]=[]){
   const rows=validateSyncRows(input);await this.sql.transaction(async tx=>{
    const read=async(store:string,key:string)=>{const r=await tx.execute('select value from kv where store=? and key=?',[store,key]);return r.rows[0]?JSON.parse(String(r.rows[0].value)):undefined;};let revision=Number(await read('settings','syncHead'))||0;
-   for(const incoming of rows){const old=await read('syncEntities',incoming.key),merged=mergeSyncRow(old,incoming,revision+1);if(!merged)continue;if(merged.operation==='upsert'&&['song','source'].includes(merged.entity)&&old?.patch?.hash&&old.patch.hash!==merged.patch?.hash)throw Error('Immutable GP content changed.');merged.revision=++revision;await this.put('syncEntities',merged.key,merged,tx);}
+   const clock=Math.max(Number(await read('settings','syncClock'))||0,...[...rows,...deferred].flatMap(row=>Object.values(row.versions).map(stamp=>Date.parse(stamp.timestamp))));await this.put('settings','syncClock',clock,tx);
+   for(const incoming of deferred){const old=await read('deferredSync',incoming.key)||await read('syncEntities',incoming.key),merged=mergeSyncRow(old,incoming,incoming.revision)||old;await this.put('deferredSync',incoming.key,projectSyncRow(merged,0),tx);}
+   for(let incoming of rows){const waiting=await read('deferredSync',incoming.key);if(waiting){incoming=projectSyncRow(mergeSyncRow(waiting,incoming,incoming.revision)||waiting,0);await tx.execute('delete from kv where store=? and key=?',['deferredSync',incoming.key]);}const old=await read('syncEntities',incoming.key),merged=mergeSyncRow(old,incoming,revision+1);if(!merged)continue;if(merged.operation==='upsert'&&['song','source'].includes(merged.entity)&&old?.patch?.hash&&old.patch.hash!==merged.patch?.hash)throw Error('Immutable GP content changed.');merged.revision=++revision;await this.put('syncEntities',merged.key,merged,tx);if(merged.entity==='song'&&merged.operation==='delete'){const pending=await tx.execute("select key,value from kv where store='deferredSync'");for(const row of pending.rows)if(syncParent(JSON.parse(String(row.value)))===merged.entityId)await tx.execute('delete from kv where store=? and key=?',['deferredSync',String(row.key)]);}}
    await this.put('settings','syncHead',revision,tx);if(checkpoint)await this.put('settings',checkpoint.key,checkpoint.cursor,tx);
   });
  }

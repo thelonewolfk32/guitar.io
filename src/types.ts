@@ -7,6 +7,7 @@ export type Progress = 'new' | 'learning' | 'comfortable' | 'mastered';
 export type ProgressSplit = Record<Progress, number>;
 export type Section = { id: string; name: string; start: number; end: number; color: string; status: Progress; notes: string; learnedPercent?: number; instructionalTimestamps?: Record<string, number>; speed?: number; createdAt?: string; updatedAt?: string };
 export type Track = { index: number; name: string; tuning: string; notes: string; strings: number };
+export type MidiMixer = { masterVolume: number; tracks: Record<string, { volume: number; muted: boolean; solo: boolean }> };
 export type Folder = { id: string; name: string; color: string };
 export type GuitarProfile = { id: string; name: string; make: string; model: string; material: string; stringGauge: string; notes: string; kind: 'guitar' | 'bass'; strings: number; tunings: { name: string; pitches: number[] }[]; artworkAssetId?: string; stringGauges?: string[]; stringBrand?: string; stringModel?: string; pickups?: string; bridge?: string; scaleLength?: string };
 export type Asset = { id: string; kind: 'audio' | 'artwork'; name: string; mime: string; blob: Blob };
@@ -45,6 +46,7 @@ export type Song = {
   spliceUndo?:{editId:string;noteEdits:Record<string,NoteEdit>;tuningNoteCompensation:Record<string,{fret:number;string:number}>;annotations:ScoreAnnotation[]};
   songsterr?: {url:string;songId:number;revisionId:number;importedAt:string};
   tracks: Track[];
+  midiMixer?: MidiMixer;
   trackIndex: number;
   sections: Section[];
   schemaVersion?: number;

@@ -1,6 +1,6 @@
 import type { Song, SyncChange } from './types';
 import { db, storageStores, forgetSource, syncNow, storageScope } from './storage';
-import { mergeSyncRow, projectSyncRow, validateSyncRows, type SyncRow } from './sync-model';
+import { mergeSyncRow, projectSyncRow, validateSyncRows, validateMidiMixer, type SyncRow } from './sync-model';
 import { summarizeSong } from './song-summary';
 import { assetIds } from './library-model';
 import {validateBackup} from './domain.mjs';
@@ -42,12 +42,13 @@ export async function syncPage(after=0,limit=100){
   return {rows:page,cursor,head:Number(head)||0,more:cursor<(Number(head)||0)};
 }
 const maps=new Set(['spliceEdits','noteEdits','tempoEdits','tuningEdits','sourceTunings','tuningCompensation','tuningNoteCompensation','annotationPositions']);
-const songFields=new Set(['id','sharedLink','title','artist','album','difficulty','tuning','guitars','tags','fileName','format','hash','bars','bpm','tracks','trackIndex','schemaVersion','folderId','artworkAssetId','collectionArt','artworkSource','demo','createdAt','lastOpenedAt','lastPlayedAt','lastPlayedBar','songsterr','spliceUndo']);
+const songFields=new Set(['id','sharedLink','title','artist','album','difficulty','tuning','guitars','tags','fileName','format','hash','bars','bpm','tracks','trackIndex','midiMixer','schemaVersion','folderId','artworkAssetId','collectionArt','artworkSource','demo','createdAt','lastOpenedAt','lastPlayedAt','lastPlayedBar','songsterr','spliceUndo']);
 function assign(target:Record<string,unknown>,patch:Record<string,unknown>){for(const [key,value] of Object.entries(patch)){if(['__proto__','constructor','prototype'].includes(key))throw new Error('Unsafe sync field.');if(value===null)delete target[key];else target[key]=value;}}
 function materialize(row:SyncRow){const result:Record<string,unknown>={};assign(result,row.patch || {});for(const [name,values] of Object.entries(row.mapPatches || {})){if(!maps.has(name))throw new Error('Unsupported edit map.');const map:Record<string,unknown>={};assign(map,values);result[name]=map;}return result;}
 function requireMeta(row:SyncRow,data:Record<string,unknown>){
   if(row.entity==='song'){
     for(const key of Object.keys(data))if(!songFields.has(key)&&!maps.has(key))throw new Error('Unsupported song field.');
+    if(Object.hasOwn(data,'midiMixer'))validateMidiMixer(data.midiMixer);
     if(typeof data.title!=='string'||typeof data.hash!=='string'||data.hash.length>128||!Array.isArray(data.tracks)||!Number.isInteger(data.bars)||Number(data.bars)<1||Number(data.bars)>20000||!Array.isArray(data.tags)||!Array.isArray(data.guitars))throw new Error('Incomplete song metadata.');
     if(Object.keys(data.noteEdits || {}).length>200000 || JSON.stringify(data.spliceEdits || {}).length>40*1024*1024)throw new Error('Song edits are too large.');
   }

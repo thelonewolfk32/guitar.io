@@ -24,3 +24,9 @@ Both local production archives were created and checked. The Windows ZIP passes 
 | --- | ---: | --- |
 | `Guitar-io-1.6.2-Windows-x64.zip` | 167811389 | `442e5b69064fa1eb4670da527e6eaabfc7efc5d25ec3ec575902077245b4d5ba` |
 | `Guitar-io-1.6.2-macOS-arm64.zip` | 135264965 | `c77be926bff4391c7c1b9a2af9cc21aa42b8ea29ee07c592b64962e3131a664d` |
+
+## Desktop CI
+
+[PR #3](https://github.com/thelonewolfk32/guitar.io/pull/3), code commit `75e1569c6bac75a70c49f5a4822d45b7e4a2bcd1`, passed the [Windows/macOS production package workflow](https://github.com/thelonewolfk32/guitar.io/actions/runs/40081432062). Windows packaging/regressions/updater checks and both macOS 15/26 jobs succeeded. The Mac jobs ran the rebuilt application, local signing/updater checks, the encrypted mixer acceptance/atomic rejection/restart regression in `sync-files-desktop.mjs`, and the 50-GP/49-cover recovery test. This establishes native Mac CI execution in addition to local archive validation. It does not establish signing or acceptance on the owner's personal Mac/iPhone. The publish job was skipped because this is a pull-request candidate, not a release tag.
+
+The React Native unsigned simulator workflow is separate and was still running when desktop acceptance completed; no updated physical iPhone was built or installed here. Subsequent documentation-only evidence does not change the tested runtime source. CI archives can differ from the local candidates above; use each download's own checksums.

@@ -1,4 +1,4 @@
-import type { SyncChange } from './types';
+import type { MidiMixer, SyncChange } from './types';
 
 export type Stamp = { timestamp:string; deviceId:string; sequence:number; revision:number };
 export type SyncRow = SyncChange & { key:string; revision:number; versions:Record<string,Stamp>; complete?:boolean };
@@ -35,6 +35,16 @@ export function projectSyncRow(row:SyncRow,after:number):SyncRow {
   const mapPatches=Object.fromEntries(Object.entries(row.mapPatches || {}).map(([name,values])=>[name,Object.fromEntries(Object.entries(values).filter(([k])=>versions[`m:${name}:${k}`]))]).filter(([,v])=>Object.keys(v).length));
   return {...row,patch,mapPatches,fields:Object.keys(patch),versions,complete:after===0};
 }
+/** Mixer metadata is optional, but a supplied value must be complete and bounded. */
+export function validateMidiMixer(value:unknown):asserts value is MidiMixer {
+  const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
+  if(!record(value)||Object.keys(value).some(key=>!['masterVolume','tracks'].includes(key))||!Number.isFinite(value.masterVolume)||Number(value.masterVolume)<0||Number(value.masterVolume)>1||!record(value.tracks))throw new Error('Invalid MIDI mixer metadata.');
+  const tracks=Object.entries(value.tracks);
+  if(tracks.length>256)throw new Error('Invalid MIDI mixer track count.');
+  for(const [index,track] of tracks){
+    if(!/^\d+$/.test(index)||!record(track)||Object.keys(track).some(key=>!['volume','muted','solo'].includes(key))||!Number.isFinite(track.volume)||Number(track.volume)<0||Number(track.volume)>1.5||typeof track.muted!=='boolean'||typeof track.solo!=='boolean')throw new Error('Invalid MIDI mixer track metadata.');
+  }
+}
 export function validateSyncRows(value:unknown):SyncRow[] {
   if(!Array.isArray(value)||value.length>500)throw new Error('Invalid change page.');
   const entities=['song','source','asset','folder','guitar','section','recording','annotation'];
@@ -42,6 +52,9 @@ export function validateSyncRows(value:unknown):SyncRow[] {
     if(!row || !entities.includes(row.entity) || typeof row.entityId!=='string' || !row.entityId || row.entityId.length>700 || row.key!==syncKey(row.entity,row.entityId) || !['upsert','delete'].includes(row.operation) || !Number.isSafeInteger(row.revision) || row.revision<1 || !row.versions || typeof row.versions!=='object')throw new Error('Invalid sync entity.');
     for(const [key,s] of Object.entries(row.versions) as [string,Stamp][]){if(!safe(key) || !s || typeof s.timestamp!=='string' || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(s.timestamp) || !Number.isFinite(Date.parse(s.timestamp)) || typeof s.deviceId!=='string' || s.deviceId.length>200 || !Number.isSafeInteger(s.sequence)||s.sequence<1)throw new Error('Invalid sync clock.');}
     if(row.patch && (typeof row.patch!=='object'||Array.isArray(row.patch)))throw new Error('Invalid sync patch.');
+    // Validate before merge: null would otherwise act as a field deletion, and
+    // malformed stale values must not be hidden by a newer field clock.
+    if(row.entity==='song'&&Object.hasOwn(row.patch || {},'midiMixer'))validateMidiMixer(row.patch.midiMixer);
     for(const [key] of Object.entries(row.patch || {}))if(!safe(key) || !row.versions[`f:${key}`])throw new Error('Missing field clock.');
     for(const [name,values] of Object.entries(row.mapPatches || {}) as [string,Record<string,unknown>][]){if(!safe(name)||!values||typeof values!=='object'||Array.isArray(values))throw new Error('Invalid keyed change.');for(const key of Object.keys(values))if(!safe(key)||!row.versions[`m:${name}:${key}`])throw new Error('Missing map clock.');}
   }

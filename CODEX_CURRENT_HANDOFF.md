@@ -1,4 +1,6 @@
-# Current Guitar.io handoff — V1.6.1 active-sync patch
+# Current Guitar.io handoff — V1.6.2 MIDI mixer sync candidate
+
+24 October: the iPhone now sends optional per-song `midiMixer` settings. V1.6.2 permits and validates that field before merge, with atomic invalid-page rejection and persistence regressions. See VALIDATION-v1.6.2.md. Build separate Windows/Mac production packages; V1.6.1 remains the published release until a new publication is verified. The iPhone-side schema is already updated; preserve its newer unshared working copy.
 
 23 October: user authorised the active-song catch-22 fix and a temporary 1,000-song testing allowance. See ACTIVE_SYNC_HANDOFF.md and VALIDATION-v1.6.1.md. Hosted quotas require the new migration/function; the newer iPhone working copy needs a targeted merge/rebuild.
 

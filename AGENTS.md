@@ -3,7 +3,7 @@
 The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertising/Capacitor direction. Preserve all unrelated local work.
 
 ## Current source and platforms
-- Published desktop version: 1.6.1, tag v1.6.1 at 26e97b6ec12f31cbfab9edd3e452e847cc7a4936. Windows/macOS 15/macOS 26 release checks and public V1.5.1/V1.6.0 updater detection passed; see VALIDATION-v1.6.1.md. Native/cloud deployment is separate.
+- Published desktop version: 1.6.2, tag v1.6.2 at 423c09ab0e041de40e8f43122f0106fd67d4f689. Windows/macOS 15/macOS 26 release checks and public V1.5.1/V1.6.0/V1.6.1 updater detection passed; see VALIDATION-v1.6.2.md. Native/cloud deployment is separate.
 - Desktop remains React/TypeScript/Vite and Electron 44.4.5, Node 24.
 - The active Apple app is React Native 0.88.0 / React 19.3.0 under `mobile`, using bundle ID `io.guitario.mobile`.
 - Run the iOS-first gates in IOS_FIRST_RELEASE.md and the steps in IOS_REACT_NATIVE_HANDOFF.md. `mobile/scripts/configure-ios.rb` connects the native modules, bundled score WebView before CocoaPods/Xcode builds. Use `--profile local` for free Personal Team signing; `--profile full` enables paid Apple capabilities. Never change bundle/team identity to bypass a signing error.
@@ -30,7 +30,7 @@ The current user's approved V1.6 plan supersedes the earlier paid-cloud/advertis
 - Preserve desktop updater save/sync draining, package verification, skipped-version installation and rollback. iOS uses TestFlight/App Store updates.
 
 ## Verification and release
-Run relevant tests, desktop/admin/mobile typechecks and builds. Use isolated fixtures; never copy a personal profile between devices. Record current MIDI mixer patch results in VALIDATION-v1.6.2.md; retain earlier release evidence. The optional song midiMixer field must remain bounded/validated before merge, and survive unrelated edits. V1.6.2 is a candidate until publication is verified.
+Run relevant tests, desktop/admin/mobile typechecks and builds. Use isolated fixtures; never copy a personal profile between devices. Record current MIDI mixer patch results in VALIDATION-v1.6.2.md; retain earlier release evidence. The optional song midiMixer field must remain bounded/validated before merge, and survive unrelated edits. V1.6.2 publication and older-updater detection are verified; preserve its published tag/downloads.
 Native Swift compilation, signing, App Groups, real-device sound and Apple purchase validation must be reported separately from TypeScript/Metro/browser results.
 The user has no Supabase project yet and requested the local setup package. Do not claim staging, live payments, private update hosting or TestFlight deployment is complete.
 Published GitHub releases/tags are immutable. Source repository: https://github.com/thelonewolfk32/guitar.io.
